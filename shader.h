@@ -17,7 +17,9 @@ struct Shader {
         shader = s.shader;
         s.shader = 0;
     }
+    Shader(const Shader &) = delete;
     ~Shader() { if (shader) glDeleteShader(shader); }
+    Shader &operator=(const Shader &) = delete;
     // simple wrappers for working with stl
     void source(const std::string & src) {
         source(std::vector<std::string>({src}));
@@ -57,10 +59,12 @@ struct Program {
         program = p.program;
         p.program = 0;
     }
+    Program(const Program&) = delete;
     ~Program() { if (program) glDeleteProgram(program); }
+    Program &operator=(const Program &) = delete;
     // simple wrappers for working with stl
-    void attach(const Shader & shader) { glAttachShader(program, shader.shader); }
-    void detach(const Shader & shader) { glDetachShader(program, shader.shader); }
+    void attach(const Shader &shader) { glAttachShader(program, shader.shader); }
+    void detach(const Shader &shader) { glDetachShader(program, shader.shader); }
     void link(void) { glLinkProgram(program); }
     GLboolean linkStatus() {
         GLint isLinked = 0;
