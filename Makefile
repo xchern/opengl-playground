@@ -1,4 +1,4 @@
-CXXFLAGS=-O2 -g
+CXXFLAGS=-O2 -g -std=c++11
 LDFLAGS=-lGL -lglfw -lGLEW
 
 objs=main.o
@@ -18,8 +18,8 @@ clean:
 %.inc: %
 	xxd -i < $< > $@
 
-main.o: main.cc $(str_inc)
-	g++ -c $(CXXFLAGS) $< -o $@
+main.o: main.cc $(str_inc) shader.h
+	clang++ -c $(CXXFLAGS) $< -o $@
 
 %.o: %.cc
-	g++ -c $(CXXFLAGS) $< -o $@
+	clang++ -c $(CXXFLAGS) $< -o $@

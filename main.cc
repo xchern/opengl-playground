@@ -6,6 +6,8 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 
+#include "shader.h"
+
 using namespace std;
 using namespace glm;
 
@@ -30,47 +32,6 @@ static const std::string fragment_src = {
 #include "shader.frag.inc"
 };
 
-void checkShader(GLuint shader) {
-    GLint isCompiled = 0;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &isCompiled);
-    if (isCompiled == GL_FALSE) {
-        GLint maxLength = 0;
-        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &maxLength);
-
-        // The maxLength includes the NULL character
-        std::vector<GLchar> errorLog(maxLength);
-        glGetShaderInfoLog(shader, maxLength, &maxLength, &errorLog[0]);
-
-        cout << &errorLog[0] << endl;
-        // Provide the infolog in whatever manor you deem best.
-        // Exit with failure.
-        glDeleteShader(shader); // Don't leak the shader.
-
-        exit(1);
-    }
-}
-
-void checkProgram(GLuint program) {
-    //Note the different functions here: glGetProgram* instead of glGetShader*.
-    GLint isLinked = 0;
-    glGetProgramiv(program, GL_LINK_STATUS, &isLinked);
-    if (isLinked == GL_FALSE) {
-        GLint maxLength = 0;
-        glGetProgramiv(program, GL_INFO_LOG_LENGTH, &maxLength);
-
-        //The maxLength includes the NULL character
-        std::vector<GLchar> infoLog(maxLength);
-        glGetProgramInfoLog(program, maxLength, &maxLength, &infoLog[0]);
-
-        //Use the infoLog as you see fit.
-        cout << &infoLog[0] << endl;
-
-        glDeleteProgram(program);
-        //In this simple program, we'll just leave
-        exit(1);
-    }
-}
-
 int main () {
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -83,32 +44,27 @@ int main () {
     glfwMakeContextCurrent(window);
     glewInit();
 
-    // shader
-    const char * src; int len;
+    Program program;
+    {
+        Shader vertex(GL_VERTEX_SHADER);
+        vertex.source(vertex_src);
+        vertex.compile();
+        if (!vertex.compileStatus()) cerr << vertex.infoLog() << endl;
 
-    GLuint vertex = glCreateShader(GL_VERTEX_SHADER);
-    src = vertex_src.c_str(); len = vertex_src.size();
-    glShaderSource(vertex, 1, &src, &len);
-    glCompileShader(vertex);
-    checkShader(vertex);
+        Shader fragment(GL_FRAGMENT_SHADER);
+        fragment.source(fragment_src);
+        fragment.compile();
+        if (!fragment.compileStatus())
+            cerr << fragment.infoLog() << endl;
 
-    GLuint fragment = glCreateShader(GL_FRAGMENT_SHADER);
-    src = fragment_src.c_str(); len = fragment_src.size();
-    glShaderSource(fragment, 1, &src, &len);
-    glShaderSource(fragment, 1, &src, &len);
-    glCompileShader(fragment);
-    checkShader(fragment);
-
-    GLuint program = glCreateProgram();
-    glAttachShader(program, vertex);
-    glAttachShader(program, fragment);
-    glLinkProgram(program);
-    checkProgram(program);
-
-    glDetachShader(program, vertex);
-    glDeleteShader(vertex);
-    glDetachShader(program, fragment);
-    glDeleteShader(fragment);
+        program.attach(vertex);
+        program.attach(fragment);
+        program.link();
+        if (!program.linkStatus())
+            cerr << program.infoLog() << endl;
+        program.detach(vertex);
+        program.detach(fragment);
+    }
 
     // vao
     GLuint vao;
@@ -122,8 +78,8 @@ int main () {
     glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_STATIC_DRAW);
 
 
-    glUseProgram(program);
-    GLuint pos_loc = glGetAttribLocation(program, "vPos");
+    program.use();
+    GLuint pos_loc = program.attributeLoc("vPos");
     glVertexAttribPointer(pos_loc, 2, GL_FLOAT, GL_FALSE, sizeof(fvec2), 0);
     glEnableVertexAttribArray(pos_loc);
     glCheckError;
@@ -131,7 +87,6 @@ int main () {
     glClearColor(0, .3, .3, 1);
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    GLint trans_loc = glGetUniformLocation(program, "translation");
     while (!glfwWindowShouldClose(window)) {
         {
             int w, h;
@@ -140,9 +95,8 @@ int main () {
         }
         {
             static float t = 0; t += .01;
-            float x = .5 * cosf(t);
-            float y = .5 * sinf(t);
-            glUniform2f(trans_loc, x, y);
+            fvec2 trans = fvec2({cosf(t), sinf(t)}) * .5f;
+            program.uniform("trans", trans);
         }
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glDrawArrays(GL_TRIANGLES, 0, sizeof(points) / sizeof(fvec2));
