@@ -46,25 +46,29 @@ int main () {
 
     Program program;
     {
-        Shader vertex(GL_VERTEX_SHADER);
-        vertex.source(vertex_src);
-        vertex.compile();
-        if (!vertex.compileStatus())
-            cerr << vertex.infoLog() << endl;
+        vector<Shader> shaders;
 
-        Shader fragment(GL_FRAGMENT_SHADER);
-        fragment.source(fragment_src);
-        fragment.compile();
-        if (!fragment.compileStatus())
-            cerr << fragment.infoLog() << endl;
+        { // vertex
+            Shader vertex(GL_VERTEX_SHADER);
+            vertex.source(vertex_src);
+            vertex.compile();
+            if (!vertex.compileStatus())
+                cerr << vertex.infoLog() << endl;
+            shaders.push_back(move(vertex));
+        }
 
-        program.attach(vertex);
-        program.attach(fragment);
-        program.link();
+        { // fragment
+            Shader fragment(GL_FRAGMENT_SHADER);
+            fragment.source(fragment_src);
+            fragment.compile();
+            if (!fragment.compileStatus())
+                cerr << fragment.infoLog() << endl;
+            shaders.push_back(move(fragment));
+        }
+
+        program.link(shaders);
         if (!program.linkStatus())
             cerr << program.infoLog() << endl;
-        program.detach(vertex);
-        program.detach(fragment);
     }
 
     // vao

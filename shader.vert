@@ -1,9 +1,9 @@
 #version 330
 
-uniform vec2 translation;
+uniform vec2 trans;
 
 in vec2 vPos;
 
 void main () {
-    gl_Position = vec4(vPos + translation, 0., 1.);
+    gl_Position = vec4(vPos + trans, 0., 1.);
 }

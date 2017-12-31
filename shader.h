@@ -65,6 +65,11 @@ struct Program {
     // simple wrappers for working with stl
     void attach(const Shader &shader) { glAttachShader(program, shader.shader); }
     void detach(const Shader &shader) { glDetachShader(program, shader.shader); }
+    void link(const std::vector<Shader> & shaders) {
+        for (const Shader & s : shaders) attach(s);
+        link();
+        for (const Shader & s : shaders) detach(s);
+    }
     void link(void) { glLinkProgram(program); }
     GLboolean linkStatus() {
         GLint isLinked = 0;

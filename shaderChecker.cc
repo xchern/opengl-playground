@@ -70,16 +70,10 @@ int main (int argc, const char ** argv) {
     // try linking
     {
         Program program;
-        for (const Shader & s : shaders) {
-            program.attach(s);
-        }
-        program.link();
+        program.link(shaders);
         if (!program.linkStatus()) {
             cerr << "error linking program:" << endl
                  << program.infoLog() << endl;
-        }
-        for (const Shader & s : shaders) {
-            program.detach(s);
         }
     }
 
