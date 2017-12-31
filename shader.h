@@ -13,7 +13,11 @@ struct Shader {
     Shader(GLenum type) {
         shader = glCreateShader(type);
     }
-    ~Shader() { glDeleteShader(shader); }
+    Shader(Shader && s) {
+        shader = s.shader;
+        s.shader = 0;
+    }
+    ~Shader() { if (shader) glDeleteShader(shader); }
     // simple wrappers for working with stl
     void source(const std::string & src) {
         source(std::vector<std::string>({src}));
@@ -25,10 +29,7 @@ struct Shader {
             string.push_back(src.c_str());
             length.push_back(src.size());
         }
-        glShaderSource(shader, 1, &string[0], &length[0]);
-    }
-    void source(int count, const char *const *string, const int *length) {
-        glShaderSource(shader, count, string, length);
+        glShaderSource(shader, srcs.size(), &string[0], &length[0]);
     }
     void compile(void) {
         glCompileShader(shader);
@@ -52,10 +53,14 @@ struct Program {
     Program() {
         program = glCreateProgram();
     }
-    ~Program() { glDeleteProgram(program); }
+    Program(Program && p) {
+        program = p.program;
+        p.program = 0;
+    }
+    ~Program() { if (program) glDeleteProgram(program); }
     // simple wrappers for working with stl
-    void attach(Shader & shader) { glAttachShader(program, shader.shader); }
-    void detach(Shader & shader) { glDetachShader(program, shader.shader); }
+    void attach(const Shader & shader) { glAttachShader(program, shader.shader); }
+    void detach(const Shader & shader) { glDetachShader(program, shader.shader); }
     void link(void) { glLinkProgram(program); }
     GLboolean linkStatus() {
         GLint isLinked = 0;

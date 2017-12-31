@@ -49,7 +49,8 @@ int main () {
         Shader vertex(GL_VERTEX_SHADER);
         vertex.source(vertex_src);
         vertex.compile();
-        if (!vertex.compileStatus()) cerr << vertex.infoLog() << endl;
+        if (!vertex.compileStatus())
+            cerr << vertex.infoLog() << endl;
 
         Shader fragment(GL_FRAGMENT_SHADER);
         fragment.source(fragment_src);
@@ -95,8 +96,7 @@ int main () {
         }
         {
             static float t = 0; t += .01;
-            fvec2 trans = fvec2({cosf(t), sinf(t)}) * .5f;
-            program.uniform("trans", trans);
+            program.uniform("trans", fvec2({cosf(t), sinf(t)}) * .5f);
         }
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glDrawArrays(GL_TRIANGLES, 0, sizeof(points) / sizeof(fvec2));

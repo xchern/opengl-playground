@@ -1,16 +1,20 @@
 CXXFLAGS=-O2 -g -std=c++11
 LDFLAGS=-lGL -lglfw -lGLEW
 
-objs=main.o
 str_inc=shader.frag.inc shader.vert.inc
 
-default: main
+default: main shaderChecker
 
-run: main
-	./main
+run: main 
+	./$<
 
-main: $(objs)
-	g++ $(LDFLAGS) $(objs) -o $@
+main: main.o
+	g++ $(LDFLAGS) $< -o $@
+
+shaderChecker: shaderChecker.o
+	g++ $(LDFLAGS) $< -o $@
+
+objs=main.o shaderChecker.o
 
 clean:
 	rm $(str_inc) $(objs)
