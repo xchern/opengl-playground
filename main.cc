@@ -5,8 +5,11 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 
 #include "shader.h"
+#include "mesh.h"
 
 using namespace std;
 using namespace glm;
@@ -18,11 +21,6 @@ using namespace glm;
             fprintf(stderr, "OpenGL error in file '%s' in line %i, Error Code 0x%x.\n", \
                     __FILE__, __LINE__, err);                                           \
     } while (0)
-
-static fvec2 points[] = {
-    {.5, .5}, {-.5, .5}, {-.5, -.5},
-    {-.5, -.5}, {.5, -.5}, {.5, .5},
-};
 
 static const std::string vertex_src = {
 #include "shader.vert.inc"
@@ -71,40 +69,38 @@ int main () {
             cerr << program.infoLog() << endl;
     }
 
+    TriangleMesh mesh;
+    if (!mesh.readRaw("teapot.raw"))
+        cerr << "cannot read file" << endl;
+
+    mesh.calcNorm();
+    mesh.copyToBuffer();
     // vao
     GLuint vao;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
 
-    // buffer
-    GLuint buffer;
-    glGenBuffers(1, &buffer);
-    glBindBuffer(GL_ARRAY_BUFFER, buffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_STATIC_DRAW);
-
-
     program.use();
-    GLuint pos_loc = program.attributeLoc("vPos");
-    glVertexAttribPointer(pos_loc, 2, GL_FLOAT, GL_FALSE, sizeof(fvec2), 0);
-    glEnableVertexAttribArray(pos_loc);
+    mesh.bind(program.attributeLoc("vPos"), program.attributeLoc("vNorm"));
     glCheckError;
 
     glClearColor(0, .3, .3, 1);
 
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glEnable(GL_DEPTH_TEST);
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     while (!glfwWindowShouldClose(window)) {
         {
             int w, h;
             glfwGetFramebufferSize(window, &w, &h);
             glViewport(0, 0, w, h);
-        }
-        {
             static float t = 0; t += .01;
-            program.uniform("trans", fvec2({cosf(t), sinf(t)}) * .5f);
+            program.uniform("proj", glm::perspective(1.f, 1.f * w / h, 1e-2f, 1e2f) *
+                glm::lookAt(glm::fvec3(cosf(t), sinf(t), 1) * 3.f, glm::fvec3(0, 0, 0), glm::fvec3(0, 0, 1)));
         }
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glDrawArrays(GL_TRIANGLES, 0, sizeof(points) / sizeof(fvec2));
+        mesh.draw();
         glCheckError;
+        //cerr << program.infoLog() << endl;
         //glFlush();
         glfwSwapBuffers(window);
         glfwPollEvents();

@@ -34,7 +34,7 @@ int main (int argc, const char ** argv) {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     //glfwWindowHint(GLFW_DOUBLEBUFFER, 0);
 
-    GLFWwindow * window = glfwCreateWindow(8, 8, "getContext", NULL, NULL);
+    GLFWwindow * window = glfwCreateWindow(8, 8, "OpenGLContext", NULL, NULL);
     glfwHideWindow(window);
     glfwMakeContextCurrent(window);
     glewInit();

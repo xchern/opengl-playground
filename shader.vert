@@ -1,9 +1,12 @@
 #version 330
 
-uniform vec2 trans;
+uniform mat4 proj;
 
-in vec2 vPos;
+in vec3 vPos;
+in vec3 vNorm;
+out vec3 fNorm;
 
 void main () {
-    gl_Position = vec4(vPos + trans, 0., 1.);
+    gl_Position = proj * vec4(vPos, 1.);
+    fNorm = (proj * vec4(vNorm,1.)).xyz;
 }

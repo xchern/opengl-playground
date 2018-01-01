@@ -22,7 +22,7 @@ clean:
 %.inc: %
 	xxd -i < $< > $@
 
-main.o: main.cc $(str_inc) shader.h
+main.o: main.cc $(str_inc) shader.h mesh.h
 	clang++ -c $(CXXFLAGS) $< -o $@
 
 %.o: %.cc
