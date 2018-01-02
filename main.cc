@@ -33,7 +33,7 @@ static const std::string fragment_src = {
 int main () {
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     //glfwWindowHint(GLFW_DOUBLEBUFFER, 0);
@@ -69,25 +69,30 @@ int main () {
             cerr << program.infoLog() << endl;
     }
 
+    TriangleMesh mFloor;
+    mFloor.vert = { {1,1,0}, {-1,1,0}, {-1,-1,0}, {1,-1,0} };
+    mFloor.face = { {0,1,2}, {2,3,0} };
+    mFloor.calcNorm();
+
     TriangleMesh mesh;
     if (!mesh.readRaw("teapot.raw"))
         cerr << "cannot read file" << endl;
 
     mesh.calcNorm();
+
+    mFloor.copyToBuffer();
     mesh.copyToBuffer();
-    // vao
-    GLuint vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+
+    mFloor.bind(program.attributeLoc("vPos"), program.attributeLoc("vNorm"));
+    mesh.bind(program.attributeLoc("vPos"), program.attributeLoc("vNorm"));
 
     program.use();
-    mesh.bind(program.attributeLoc("vPos"), program.attributeLoc("vNorm"));
     glCheckError;
 
     glClearColor(0, .3, .3, 1);
 
     glEnable(GL_DEPTH_TEST);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     while (!glfwWindowShouldClose(window)) {
         {
             int w, h;
@@ -105,6 +110,7 @@ int main () {
             glCheckError;
         }
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        mFloor.draw();
         mesh.draw();
         glCheckError;
         //glFlush();

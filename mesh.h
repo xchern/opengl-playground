@@ -30,13 +30,16 @@ class TriangleMesh { public:
     std::vector<glm::fvec3> faceCentor;
 
     // drawing opengl
-    GLuint bufVert, bufNorm, bufFace;
+    GLuint bufVert, bufNorm, bufFace, vao;
+
     TriangleMesh() {
+        glGenVertexArrays(1, &vao);
         glGenBuffers(1, &bufVert);
         glGenBuffers(1, &bufNorm);
         glGenBuffers(1, &bufFace);
     }
     ~TriangleMesh() {
+        glDeleteVertexArrays(1, &vao);
         glDeleteBuffers(1, &bufVert);
         glDeleteBuffers(1, &bufNorm);
         glDeleteBuffers(1, &bufFace);
@@ -52,15 +55,17 @@ class TriangleMesh { public:
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(glm::ivec3) * face.size(), &face[0], usage);
     }
     void bind(GLuint posLoc, GLuint normLoc) {
+        glBindVertexArray(vao);
         glBindBuffer(GL_ARRAY_BUFFER, bufVert);
         glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
         glEnableVertexAttribArray(posLoc);
         glBindBuffer(GL_ARRAY_BUFFER, bufNorm);
         glVertexAttribPointer(normLoc, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
         glEnableVertexAttribArray(normLoc);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufFace);
     }
     void draw() {
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufFace);
+        glBindVertexArray(vao);
         glDrawElements(GL_TRIANGLES, face.size() * 3, GL_UNSIGNED_INT, (void *) 0);
     }
 
