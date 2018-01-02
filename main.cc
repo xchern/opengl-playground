@@ -38,7 +38,7 @@ int main () {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     //glfwWindowHint(GLFW_DOUBLEBUFFER, 0);
 
-    GLFWwindow * window = glfwCreateWindow(800, 600, "demo", NULL, NULL);
+    GLFWwindow * window = glfwCreateWindow(800, 600, "shading", NULL, NULL);
     glfwMakeContextCurrent(window);
     glewInit();
 
@@ -87,20 +87,26 @@ int main () {
     glClearColor(0, .3, .3, 1);
 
     glEnable(GL_DEPTH_TEST);
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     while (!glfwWindowShouldClose(window)) {
         {
             int w, h;
+            double x, y;
             glfwGetFramebufferSize(window, &w, &h);
+            glfwGetCursorPos(window, &x, &y);
             glViewport(0, 0, w, h);
             static float t = 0; t += .01;
+            program.uniform("lightDir", glm::normalize(glm::fvec3(.1, x/w-.5, -(y/h-.5))));
+
+            glm::fvec3 eye = glm::fvec3(cosf(t), sinf(t), 0.5) * 3.f;
+            program.uniform("eyePos", eye);
             program.uniform("proj", glm::perspective(1.f, 1.f * w / h, 1e-2f, 1e2f) *
-                glm::lookAt(glm::fvec3(cosf(t), sinf(t), 1) * 3.f, glm::fvec3(0, 0, 0), glm::fvec3(0, 0, 1)));
+                glm::lookAt(eye, glm::fvec3(0, 0, 0), glm::fvec3(0, 0, 1)));
+            glCheckError;
         }
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         mesh.draw();
         glCheckError;
-        //cerr << program.infoLog() << endl;
         //glFlush();
         glfwSwapBuffers(window);
         glfwPollEvents();
