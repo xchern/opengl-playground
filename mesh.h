@@ -9,7 +9,7 @@
 #include <GL/gl.h>
 
 namespace glm {
-bool operator<(fvec3 a, fvec3 b) { // for use in map
+inline bool operator<(fvec3 a, fvec3 b) { // for use in map
     if (a.x < b.x) return true;
     if (a.x > b.x) return false;
     if (a.y < b.y) return true;
@@ -22,14 +22,13 @@ bool operator<(fvec3 a, fvec3 b) { // for use in map
 
 class TriangleMesh { public:
     std::vector<glm::fvec3> vert;
-    //std::vector<glm::fvec3> textCoord;
     std::vector<glm::fvec3> norm;
 
     std::vector<glm::ivec3> face;
     std::vector<glm::fvec3> faceNorm;
     std::vector<glm::fvec3> faceCentor;
 
-    // drawing opengl
+    // opengl
     GLuint bufVert, bufNorm, bufFace, vao;
 
     TriangleMesh() {
