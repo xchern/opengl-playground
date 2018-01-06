@@ -4,9 +4,7 @@
 #include <string>
 
 #include <glm/glm.hpp>
-#include <GL/glew.h>
-#include <GL/gl.h>
-
+#include <GL/gl3w.h>
 
 struct Shader {
     GLuint shader;

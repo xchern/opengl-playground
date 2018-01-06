@@ -5,8 +5,7 @@
 #include <map>
 
 #include <glm/glm.hpp>
-#include <GL/glew.h>
-#include <GL/gl.h>
+#include <GL/gl3w.h>
 
 namespace glm {
 inline bool operator<(fvec3 a, fvec3 b) { // for use in map

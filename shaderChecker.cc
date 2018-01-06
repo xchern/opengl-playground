@@ -4,7 +4,7 @@
 #include <string>
 #include <utility>
 
-#include <GL/glew.h>
+#include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 
@@ -37,7 +37,7 @@ int main (int argc, const char ** argv) {
     GLFWwindow * window = glfwCreateWindow(8, 8, "OpenGLContext", NULL, NULL);
     glfwHideWindow(window);
     glfwMakeContextCurrent(window);
-    glewInit();
+    gl3wInit();
 
     // reading & compiling files
     vector<Shader> shaders;

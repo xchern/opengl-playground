@@ -2,7 +2,7 @@
 #include <string>
 #include <vector>
 
-#include <GL/glew.h>
+#include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -23,11 +23,11 @@ using namespace glm;
     } while (0)
 
 static const std::string vertex_src = {
-#include "shader.vert.inc"
+#include "shader/phong.vert.inc"
 };
 
 static const std::string fragment_src = {
-#include "shader.frag.inc"
+#include "shader/phong.frag.inc"
 };
 
 int main () {
@@ -39,9 +39,9 @@ int main () {
     glfwWindowHint(GLFW_SAMPLES, 4);
     //glfwWindowHint(GLFW_DOUBLEBUFFER, 0);
 
-    GLFWwindow * window = glfwCreateWindow(800, 600, "shading", NULL, NULL);
+    GLFWwindow * window = glfwCreateWindow(1200, 800, "shading", NULL, NULL);
     glfwMakeContextCurrent(window);
-    glewInit();
+    gl3wInit();
 
     {
         Program program;
@@ -77,7 +77,7 @@ int main () {
         mFloor.calcNorm();
 
         TriangleMesh mesh;
-        if (!mesh.readRaw("teapot.raw"))
+        if (!mesh.readRaw("data/teapot.raw"))
             cerr << "cannot read file" << endl;
 
         mesh.calcNorm();

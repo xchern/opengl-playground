@@ -3,3 +3,4 @@
 main
 shaderChecker
 .vscode/
+build/
