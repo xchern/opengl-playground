@@ -109,7 +109,7 @@ int main () {
 
                 glm::fvec3 eye = glm::fvec3(cosf(t), sinf(t), 0.5) * 3.f;
                 program.uniform("eyePos", eye);
-                program.uniform("proj", glm::perspective(1.f, 1.f * w / h, 1e-2f, 1e2f) *
+                program.uniform("proj", glm::perspective(1.f, 1.f * w / h, 9e-1f, 1e1f) *
                     glm::lookAt(eye, glm::fvec3(0, 0, 0), glm::fvec3(0, 0, 1)));
                 glCheckError;
             }

@@ -9,10 +9,10 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/utils
     )
 
-add_executable(shaderChecker
-    shaderChecker.cc
+add_executable(checkShader
+    checkShader.cc
     )
-target_link_libraries(shaderChecker
+target_link_libraries(checkShader
     gl3w
     glfw
     )
