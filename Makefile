@@ -1,6 +1,8 @@
 str_inc=\
+shader/smooth.vert.inc\
+shader/smooth.frag.inc\
 shader/phong.frag.inc\
-shader/phong.vert.inc\
+shader/marble.frag.inc\
 
 
 default: $(str_inc)
