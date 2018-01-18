@@ -25,8 +25,6 @@ using namespace std;
 */
 
 int main (int argc, const char ** argv) {
-    bool success = true;
-
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
@@ -39,45 +37,9 @@ int main (int argc, const char ** argv) {
     glfwMakeContextCurrent(window);
     gl3wInit();
 
-    // reading & compiling files
-    vector<Shader> shaders;
-    for (const char ** namep = argv + 1; namep < argv + argc; namep++) {
-        const std::string filename(*namep);
-        const std::string ext(filename.substr(filename.size() - 5, 5));
-
-        ifstream ifs(filename);
-        if (!ifs.is_open()) {
-            cerr << "cannot open: " << filename << endl;
-            exit(1);
-        }
-        string content((istreambuf_iterator<char>(ifs)), istreambuf_iterator<char>());
-        GLenum type;
-        if (ext == ".vert") type = GL_VERTEX_SHADER;
-        if (ext == ".frag") type = GL_FRAGMENT_SHADER;
-        Shader s(type);
-        s.source(content);
-        s.compile();
-        if (!s.compileStatus()) {
-            cerr << "error compiling '" << filename << "':" << endl
-                 << s.infoLog() << endl;
-            success = false;
-        }
-        shaders.push_back(move(s));
-    }
-
-    if (!success) return 1;
-
-    // try linking
-    {
-        Program program;
-        program.link(shaders);
-        if (!program.linkStatus()) {
-            cerr << "error linking program:" << endl
-                 << program.infoLog() << endl;
-        }
-    }
-
-    if (!success) return 1;
+    Program prog;
+    if (!prog.fromFiles(std::vector<std::string>(argv + 1, argv + argc)))
+        return 1;
 
     glfwTerminate();
 }

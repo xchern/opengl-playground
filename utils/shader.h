@@ -1,4 +1,6 @@
 #pragma once
+#include <iostream>
+#include <fstream>
 
 #include <vector>
 #include <string>
@@ -19,6 +21,25 @@ struct Shader {
     ~Shader() { if (shader) glDeleteShader(shader); }
     Shader &operator=(const Shader &) = delete;
     // simple wrappers for working with stl
+    bool fromFile(std::string filename) {
+        // reading
+        std::ifstream ifs(filename);
+        if (!ifs.is_open()) {
+            std::cerr << "cannot open: " << filename << std::endl;
+            return false;
+        }
+        std::string content((std::istreambuf_iterator<char>(ifs)),
+                       std::istreambuf_iterator<char>());
+
+        // compiling
+        source(content);
+        compile();
+        if (!compileStatus()) {
+            std::cerr << "error compiling '" << filename << "':" << std::endl
+                 << infoLog() << std::endl;
+            return false;
+        }
+    }
     void source(const std::string & src) {
         source(std::vector<std::string>({src}));
     }
@@ -60,6 +81,40 @@ struct Program {
     Program(const Program&) = delete;
     ~Program() { if (program) glDeleteProgram(program); }
     Program &operator=(const Program &) = delete;
+    bool fromFiles(std::vector<std::string> files) {
+        bool success = true;
+
+        // reading & compiling files
+        std::vector<Shader> shaders;
+        for (const std::string &filename : files) {
+            GLenum type;
+            const std::string ext(filename.substr(filename.size() - 5, 5));
+            if (ext == ".vert")
+                type = GL_VERTEX_SHADER;
+            if (ext == ".frag")
+                type = GL_FRAGMENT_SHADER;
+            Shader s(type);
+            if (s.fromFile(filename)) {
+                shaders.push_back(std::move(s));
+            } else {
+                success = false;
+            }
+        }
+
+        if (!success) return false;
+
+        // try linking
+        link(shaders);
+        if (!linkStatus()) {
+            std::cerr << "error linking program:" << std::endl
+                 << infoLog() << std::endl;
+            success = false;
+        }
+
+        if (!success) return false;
+
+        return true;
+    }
     // simple wrappers for working with stl
     void attach(const Shader &shader) { glAttachShader(program, shader.shader); }
     void detach(const Shader &shader) { glDetachShader(program, shader.shader); }
