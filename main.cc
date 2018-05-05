@@ -95,7 +95,7 @@ int main () {
         mFloor.calcNorm();
 
         TriangleMesh mesh;
-        if (!mesh.readRaw("data/ball.raw"))
+        if (!mesh.readRaw("data/coke.raw"))
             cerr << "cannot read file" << endl;
 
         mesh.calcNorm();
@@ -129,20 +129,22 @@ int main () {
 
                 static float t = 0; t += .001;
                 //glm::fvec3 eye = glm::fvec3(cosf(t), sinf(t), 1.f) * 10.f;
-                glm::fvec3 eye = glm::normalize(-glm::fvec3(-.1, x / w - .5, -(y / h - .5))) * 15.f;
+                glm::fvec3 eye = glm::normalize(-glm::fvec3(-.5, (x / w - .5) * ((float)w/h), -(y / h - .5))) * 20.f;
                 program.uniform("eyePos", eye);
                 program.uniform("proj", glm::perspective(1.0f, 1.f * w / h, 1e-2f, 1e2f) *
                                  glm::lookAt(eye, glm::fvec3(0, 0, 0), glm::fvec3(0, 0, 1)));
                 glCheckError;
             }
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            program.uniform("trans", glm::translate(glm::fvec3(0, 0, -6.01)) * glm::scale(glm::fvec3(10)));
+            program.uniform("trans", glm::translate(glm::fvec3(0, 0, -4.01)) * glm::scale(glm::fvec3(10)));
             mFloor.draw();
-            for (float y = -5; y <= 5; y += 2)
-                for (float z = -5; z <= 5; z += 2) {
-                    program.uniform("trans", glm::translate(glm::fvec3(0, y, z)));
-                    mesh.draw();
-                }
+            for (float x = -7; x <= 7; x += 2)
+                for (float y = -7; y <= 7; y += 2)
+                    for (float z = 0; z <= 4; z += 4) {
+                        program.uniform("trans",
+                                        glm::translate(glm::fvec3(x, y, z)));
+                        mesh.draw();
+                    }
             glCheckError;
             //glFlush();
             glfwSwapBuffers(window);

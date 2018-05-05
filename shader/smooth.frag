@@ -31,7 +31,7 @@ void main () {
     vec3 v = normalize(fEye);
     vec3 n = normalize(fNorm);
     vec3 l = lightDir;
-    fColor = brdf(v, n, l);
+    fColor = brdf(l, n, v);
     fColor = Uncharted2ToneMapping(fColor);
     //fColor = vec3(gl_FragCoord.z);
 }

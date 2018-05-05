@@ -20,7 +20,6 @@ struct Shader {
     Shader(const Shader &) = delete;
     ~Shader() { if (shader) glDeleteShader(shader); }
     Shader &operator=(const Shader &) = delete;
-    // simple wrappers for working with stl
     bool fromFile(std::string filename) {
         // reading
         std::ifstream ifs(filename);
@@ -40,6 +39,7 @@ struct Shader {
             return false;
         }
     }
+    // simple wrappers for working with stl
     void source(const std::string & src) {
         source(std::vector<std::string>({src}));
     }
