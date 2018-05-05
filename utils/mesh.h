@@ -103,9 +103,11 @@ class TriangleMesh { public:
             faceNorm[i] = glm::normalize(glm::cross(a - b, b - c));
         }
     }
-    bool readRaw(std::string filename) {
+    void readRaw(std::string filename) {
         std::ifstream ifs(filename);
-        if (!ifs.is_open()) return false;
+        if (!ifs.is_open())
+            throw std::runtime_error(std::string("TriangleMesh cannot open file: ") +
+                                     filename);
         vert.clear(); face.clear();
 
         glm::fvec3 a, b, c; int vid = 0;
@@ -128,11 +130,12 @@ class TriangleMesh { public:
         }
         vert.resize(vid);
         for (const auto & p: vertmap) vert[p.second] = p.first;
-        return true;
     }
-    bool readObj(std::string filename) {
+    void readObj(std::string filename) {
         std::ifstream ifs(filename);
-        if (!ifs.is_open()) return false;
+        if (!ifs.is_open())
+            throw std::runtime_error(std::string("TriangleMesh cannot open file: ") +
+                                     filename);
         vert.clear(); face.clear();
         std::string line;
         while (std::getline(ifs, line)) {
@@ -152,16 +155,16 @@ class TriangleMesh { public:
                 face.push_back(ivec3);
             }
         }
-        return true;
     }
-    bool writeObj(std::string filename) {
+    void writeObj(std::string filename) {
         std::ofstream ofs(filename);
-        if (!ofs.is_open()) return false;
+        if (!ofs.is_open())
+            throw std::runtime_error(std::string("TriangleMesh cannot open file: ") +
+                                     filename);
         for (const glm::fvec3 & p: vert)
             ofs << "v " << p.x << ' ' << p.y << ' ' << p.z << '\n';
         for (const glm::ivec3 & f: vert)
             ofs << "f " << f[0] << ' ' << f[1] << ' ' << f[2] << '\n';
         ofs << std::flush;
-        return true;
     }
 };

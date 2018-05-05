@@ -61,8 +61,6 @@ int main () {
                 Shader vertex(GL_VERTEX_SHADER);
                 vertex.source(vertex_src);
                 vertex.compile();
-                if (!vertex.compileStatus())
-                    cerr << vertex.infoLog() << endl;
                 shaders.push_back(move(vertex));
             }
 
@@ -70,8 +68,6 @@ int main () {
                 Shader fragment(GL_FRAGMENT_SHADER);
                 fragment.source(fragment_src);
                 fragment.compile();
-                if (!fragment.compileStatus())
-                    cerr << fragment.infoLog() << endl;
                 shaders.push_back(move(fragment));
             }
 
@@ -79,14 +75,10 @@ int main () {
                 Shader fragment(GL_FRAGMENT_SHADER);
                 fragment.source(brdf_src);
                 fragment.compile();
-                if (!fragment.compileStatus())
-                    cerr << fragment.infoLog() << endl;
                 shaders.push_back(move(fragment));
             }
 
             program.link(shaders);
-            if (!program.linkStatus())
-                cerr << program.infoLog() << endl;
         }
 
         TriangleMesh mFloor;
@@ -95,8 +87,7 @@ int main () {
         mFloor.calcNorm();
 
         TriangleMesh mesh;
-        if (!mesh.readRaw("data/coke.raw"))
-            cerr << "cannot read file" << endl;
+        mesh.readRaw("data/coke.raw");
 
         mesh.calcNorm();
 
