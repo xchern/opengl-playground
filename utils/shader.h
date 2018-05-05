@@ -20,23 +20,23 @@ struct Shader {
     Shader(const Shader &) = delete;
     ~Shader() { if (shader) glDeleteShader(shader); }
     Shader &operator=(const Shader &) = delete;
-    bool fromFile(std::string filename) {
+    void fromFile(std::string filename) {
         // reading
         std::ifstream ifs(filename);
         if (!ifs.is_open()) {
-            std::cerr << "cannot open: " << filename << std::endl;
-            return false;
+            throw std::runtime_error(std::string("Shader cannot open file: ") + filename);
         }
         std::string content((std::istreambuf_iterator<char>(ifs)),
                        std::istreambuf_iterator<char>());
 
         // compiling
         source(content);
-        compile();
-        if (!compileStatus()) {
-            std::cerr << "error compiling '" << filename << "':" << std::endl
-                 << infoLog() << std::endl;
-            return false;
+        try {
+            compile();
+        } catch (std::runtime_error & e) {
+            throw std::runtime_error(
+                std::string("Shader compiling file: ") + filename + "\n" + e.what()
+            );
         }
     }
     // simple wrappers for working with stl
@@ -54,6 +54,8 @@ struct Shader {
     }
     void compile(void) {
         glCompileShader(shader);
+        if (!compileStatus())
+            throw std::runtime_error(infoLog());
     }
     GLboolean compileStatus(void) {
         GLint isCompiled = 0;
@@ -81,9 +83,7 @@ struct Program {
     Program(const Program&) = delete;
     ~Program() { if (program) glDeleteProgram(program); }
     Program &operator=(const Program &) = delete;
-    bool fromFiles(std::vector<std::string> files) {
-        bool success = true;
-
+    void fromFiles(std::vector<std::string> files) {
         // reading & compiling files
         std::vector<Shader> shaders;
         for (const std::string &filename : files) {
@@ -94,26 +94,11 @@ struct Program {
             if (ext == ".frag")
                 type = GL_FRAGMENT_SHADER;
             Shader s(type);
-            if (s.fromFile(filename)) {
-                shaders.push_back(std::move(s));
-            } else {
-                success = false;
-            }
+            s.fromFile(filename);
+            shaders.push_back(std::move(s));
         }
-
-        if (!success) return false;
-
-        // try linking
+        // linking
         link(shaders);
-        if (!linkStatus()) {
-            std::cerr << "error linking program:" << std::endl
-                 << infoLog() << std::endl;
-            success = false;
-        }
-
-        if (!success) return false;
-
-        return true;
     }
     // simple wrappers for working with stl
     void attach(const Shader &shader) { glAttachShader(program, shader.shader); }
@@ -123,7 +108,11 @@ struct Program {
         link();
         for (const Shader & s : shaders) detach(s);
     }
-    void link(void) { glLinkProgram(program); }
+    void link(void) {
+        glLinkProgram(program);
+        if (!linkStatus())
+            throw std::runtime_error(std::string("Program linking:\n") + infoLog());
+    }
     GLboolean linkStatus() {
         GLint isLinked = 0;
         glGetProgramiv(program, GL_LINK_STATUS, &isLinked);

@@ -37,9 +37,12 @@ int main (int argc, const char ** argv) {
     glfwMakeContextCurrent(window);
     gl3wInit();
 
-    Program prog;
-    if (!prog.fromFiles(std::vector<std::string>(argv + 1, argv + argc)))
-        return 1;
+    try {
+        Program prog;
+        prog.fromFiles(std::vector<std::string>(argv + 1, argv + argc));
+    } catch (std::runtime_error & e) {
+        std::cerr << e.what() << std::endl;
+    }
 
     glfwTerminate();
 }
