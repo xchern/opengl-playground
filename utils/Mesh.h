@@ -1,3 +1,5 @@
+#pragma once
+
 #include <fstream>
 #include <sstream>
 #include <vector>
@@ -6,6 +8,9 @@
 
 #include <glm/glm.hpp>
 #include <GL/gl3w.h>
+
+#include "Buffer.h"
+#include "VertexArray.h"
 
 namespace glm {
 inline bool operator<(fvec3 a, fvec3 b) { // for use in map
@@ -19,7 +24,8 @@ inline bool operator<(fvec3 a, fvec3 b) { // for use in map
 };
 }
 
-class TriangleMesh { public:
+class TriangleMesh {
+public:
     std::vector<glm::fvec3> vert;
     std::vector<glm::fvec3> norm;
 
@@ -28,42 +34,27 @@ class TriangleMesh { public:
     std::vector<glm::fvec3> faceCentor;
 
     // opengl
-    GLuint bufVert, bufNorm, bufFace, vao;
+    ArrayBuffer bufVert, bufNorm;
+    ElementArrayBuffer bufFace;
+    VertexArray va;
 
-    TriangleMesh() {
-        glGenVertexArrays(1, &vao);
-        glGenBuffers(1, &bufVert);
-        glGenBuffers(1, &bufNorm);
-        glGenBuffers(1, &bufFace);
-    }
-    ~TriangleMesh() {
-        glDeleteVertexArrays(1, &vao);
-        glDeleteBuffers(1, &bufVert);
-        glDeleteBuffers(1, &bufNorm);
-        glDeleteBuffers(1, &bufFace);
-    }
     void copyToBuffer(GLenum usage = GL_STATIC_DRAW) {
-        glBindBuffer(GL_ARRAY_BUFFER, bufVert);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(glm::fvec3) * vert.size(), &vert[0], usage);
-
-        glBindBuffer(GL_ARRAY_BUFFER, bufNorm);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(glm::fvec3) * norm.size(), &norm[0], usage);
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufFace);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(glm::ivec3) * face.size(), &face[0], usage);
+        bufVert.data(sizeof(glm::fvec3) * vert.size(), &vert[0], usage);
+        bufNorm.data(sizeof(glm::fvec3) * norm.size(), &norm[0], usage);
+        bufFace.data(sizeof(glm::ivec3) * face.size(), &face[0], usage);
     }
     void bind(GLuint posLoc, GLuint normLoc) {
-        glBindVertexArray(vao);
-        glBindBuffer(GL_ARRAY_BUFFER, bufVert);
+        va.bind();
+        bufVert.bind();
         glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
         glEnableVertexAttribArray(posLoc);
-        glBindBuffer(GL_ARRAY_BUFFER, bufNorm);
+        bufNorm.bind();
         glVertexAttribPointer(normLoc, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
         glEnableVertexAttribArray(normLoc);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufFace);
+        bufFace.bind();
     }
     void draw() {
-        glBindVertexArray(vao);
+        va.bind();
         glDrawElements(GL_TRIANGLES, face.size() * 3, GL_UNSIGNED_INT, (void *) 0);
     }
 

@@ -9,8 +9,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 
-#include "shader.h"
-#include "mesh.h"
+#include "Shader.h"
+#include "Mesh.h"
+#include "Texture.h"
 
 using namespace std;
 using namespace glm;
@@ -120,7 +121,8 @@ int main () {
 
                 static float t = 0; t += .001;
                 //glm::fvec3 eye = glm::fvec3(cosf(t), sinf(t), 1.f) * 10.f;
-                glm::fvec3 eye = glm::normalize(-glm::fvec3(-.5, (x / w - .5) * ((float)w/h), -(y / h - .5))) * 20.f;
+                float theta = (x / w - .5) * ((float)w/h) * 2;
+                glm::fvec3 eye = glm::normalize(-glm::fvec3(cos(theta), sin(-theta), -(y / h - .5))) * 20.f;
                 program.uniform("eyePos", eye);
                 program.uniform("proj", glm::perspective(1.0f, 1.f * w / h, 1e-2f, 1e2f) *
                                  glm::lookAt(eye, glm::fvec3(0, 0, 0), glm::fvec3(0, 0, 1)));
