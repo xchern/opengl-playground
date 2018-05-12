@@ -10,7 +10,6 @@ protected:
     ~Texture() {
         glDeleteTextures(1, &texture);
     }
-public:
     Texture() {
         glGenTextures(1, &texture);
     }
