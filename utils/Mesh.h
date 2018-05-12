@@ -26,14 +26,14 @@ inline bool operator<(fvec3 a, fvec3 b) { // for use in map
 
 class SimpleMesh {
 public:
-    std::vector<glm::fvec3> vertPos;
+    std::vector<glm::fvec3> vertice;
     std::vector<glm::ivec3> face;
     void readRaw(std::string filename) {
         std::ifstream ifs(filename);
         if (!ifs.is_open())
             throw std::runtime_error(std::string("TriangleMesh cannot open file: ") +
                                      filename);
-        vertPos.clear(); face.clear();
+        vertice.clear(); face.clear();
 
         glm::fvec3 a, b, c; int vid = 0;
         glm::ivec3 f;
@@ -53,15 +53,15 @@ public:
                 face.push_back(f);
             }
         }
-        vertPos.resize(vid);
-        for (const auto & p: vertmap) vertPos[p.second] = p.first;
+        vertice.resize(vid);
+        for (const auto & p: vertmap) vertice[p.second] = p.first;
     }
     void readObj(std::string filename) {
         std::ifstream ifs(filename);
         if (!ifs.is_open())
             throw std::runtime_error(std::string("TriangleMesh cannot open file: ") +
                                      filename);
-        vertPos.clear(); face.clear();
+        vertice.clear(); face.clear();
         std::string line;
         while (std::getline(ifs, line)) {
 
@@ -71,7 +71,7 @@ public:
             if (tmp == "v") {
                 glm::fvec3 fvec3;
                 iss >> fvec3.x >> fvec3.y >> fvec3.z;
-                vertPos.push_back(fvec3);
+                vertice.push_back(fvec3);
             }
             else if (tmp == "f") {
                 glm::ivec3 ivec3;
@@ -86,9 +86,9 @@ public:
         if (!ofs.is_open())
             throw std::runtime_error(std::string("TriangleMesh cannot open file: ") +
                                      filename);
-        for (const glm::fvec3 & p: vertPos)
+        for (const glm::fvec3 & p: vertice)
             ofs << "v " << p.x << ' ' << p.y << ' ' << p.z << '\n';
-        for (const glm::ivec3 & f: vertPos)
+        for (const glm::ivec3 & f: vertice)
             ofs << "f " << f[0] << ' ' << f[1] << ' ' << f[2] << '\n';
         ofs << std::flush;
     }
@@ -100,8 +100,8 @@ protected:
     ArrayBuffer bufVertPos, bufVertNorm;
     VertexArray va;
 public:
-    void fromData(std::vector<glm::fvec3> vertPos_, std::vector<glm::ivec3> face_) {
-        vertPos = vertPos_;
+    void fromData(std::vector<glm::fvec3> vertice_, std::vector<glm::ivec3> face_) {
+        vertice = vertice_;
         face = face_;
         calcFaceNorm();
     }
@@ -109,9 +109,9 @@ public:
         faceNorm.resize(face.size());
         for (int i = 0; i < face.size(); i++) {
             const glm::ivec3 f = face[i];
-            const glm::fvec3 a = vertPos[f[0]];
-            const glm::fvec3 b = vertPos[f[1]];
-            const glm::fvec3 c = vertPos[f[2]];
+            const glm::fvec3 a = vertice[f[0]];
+            const glm::fvec3 b = vertice[f[1]];
+            const glm::fvec3 c = vertice[f[2]];
             faceNorm[i] = glm::normalize(glm::cross(a - b, b - c));
         }
     }
@@ -120,7 +120,7 @@ public:
         for (int i = 0; i < face.size(); i++) {
             const glm::ivec3 f = face[i];
             for (int v = 0; v < 3; v++)
-                buf[3*i + v] = vertPos[f[v]];
+                buf[3*i + v] = vertice[f[v]];
         }
         bufVertPos.data(sizeof(glm::fvec3) * buf.size(), buf.data(), usage);
         for (int i = 0; i < face.size(); i++) {
@@ -153,23 +153,23 @@ protected:
     // opengl
     ElementArrayBuffer bufFace;
 public:
-    void fromData(std::vector<glm::fvec3> vertPos_, std::vector<glm::ivec3> face_) {
-        FlatTriangleMesh::fromData(vertPos_, face_);
+    void fromData(std::vector<glm::fvec3> vertice_, std::vector<glm::ivec3> face_) {
+        FlatTriangleMesh::fromData(vertice_, face_);
         calcVertexNorm();
     }
     void fromData(
-            std::vector<glm::fvec3> vertPos_,
+            std::vector<glm::fvec3> vertice_,
             std::vector<glm::fvec3> vertNorm_,
             std::vector<glm::ivec3> face_
             ) {
-        vertPos = vertPos_;
+        vertice = vertice_;
         vertNorm = vertNorm_;
         face = face_;
     }
 
     void offset(float o) {
-        for (int i = 0; i < vertPos.size(); i++)
-            vertPos[i] += vertNorm[i] * o;
+        for (int i = 0; i < vertice.size(); i++)
+            vertice[i] += vertNorm[i] * o;
     }
     void calcNorm(void) {
         calcFaceNorm();
@@ -177,12 +177,12 @@ public:
     }
     void calcVertexNorm(void) {
         vertNorm.clear();
-        vertNorm.resize(vertPos.size(), glm::fvec3(0, 0, 0));
+        vertNorm.resize(vertice.size(), glm::fvec3(0, 0, 0));
         for (int i = 0; i < face.size(); i++) {
             const glm::ivec3 f = face[i];
-            const float a = length(vertPos[f[1]] - vertPos[f[2]]);
-            const float b = length(vertPos[f[2]] - vertPos[f[0]]);
-            const float c = length(vertPos[f[0]] - vertPos[f[1]]);
+            const float a = length(vertice[f[1]] - vertice[f[2]]);
+            const float b = length(vertice[f[2]] - vertice[f[0]]);
+            const float c = length(vertice[f[0]] - vertice[f[1]]);
             const float A = acos((b * b + c * c - a * a) / (2.f * b * c));
             const float B = acos((a * a + c * c - b * b) / (2.f * a * c));
             const float C = acos((a * a + b * b - c * c) / (2.f * a * b));
@@ -197,11 +197,11 @@ public:
         faceCentor.resize(face.size());
         for (int i = 0; i < face.size(); i++) {
             const glm::ivec3 f = face[i];
-            faceCentor[i] = (vertPos[f[0]] + vertPos[f[1]] + vertPos[f[2]]) * (1.f / 3);
+            faceCentor[i] = (vertice[f[0]] + vertice[f[1]] + vertice[f[2]]) * (1.f / 3);
         }
     }
     void copyToBuffer(GLenum usage = GL_STATIC_DRAW) {
-        bufVertPos.data(sizeof(glm::fvec3) * vertPos.size(), &vertPos[0], usage);
+        bufVertPos.data(sizeof(glm::fvec3) * vertice.size(), &vertice[0], usage);
         bufVertNorm.data(sizeof(glm::fvec3) * vertNorm.size(), &vertNorm[0], usage);
         bufFace.data(sizeof(glm::ivec3) * face.size(), &face[0], usage);
     }
@@ -224,9 +224,9 @@ class TriangleUVMesh : public SmoothTriangleMesh {
     std::vector<glm::fvec2> vertCoord;
     ArrayBuffer bufVertCoord;
 public:
-    void fromData(std::vector<glm::fvec3> vertPos_, std::vector<glm::ivec3> face_) {
-        SmoothTriangleMesh::fromData(vertPos_, face_);
-        vertCoord = std::vector<glm::fvec2> (vertPos.size(), {0,0}); // zero coord
+    void fromData(std::vector<glm::fvec3> vertice_, std::vector<glm::ivec3> face_) {
+        SmoothTriangleMesh::fromData(vertice_, face_);
+        vertCoord = std::vector<glm::fvec2> (vertice.size(), {0,0}); // zero coord
     }
     void copyToBuffer(GLenum usage = GL_STATIC_DRAW) {
         SmoothTriangleMesh::copyToBuffer(usage);

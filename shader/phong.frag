@@ -22,8 +22,8 @@ const float ks = .2;
 const float kd = .8;
 const float alpha = 8;
 
-const vec3 ia = vec3(1,0.5,0) * 0.2;
-const vec3 id = vec3(1,0.5,0);
+const vec3 ia = vec3(1,1,1) * 0.2;
+const vec3 id = vec3(1,1,1);
 const vec3 is = vec3(1,1,1);
 
 vec3 brdf(vec3 l, vec3 n, vec3 v) {

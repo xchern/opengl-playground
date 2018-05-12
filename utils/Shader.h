@@ -92,8 +92,9 @@ struct Program {
             const std::string ext(filename.substr(filename.size() - 5, 5));
             if (ext == ".vert")
                 type = GL_VERTEX_SHADER;
-            if (ext == ".frag")
+            else if (ext == ".frag")
                 type = GL_FRAGMENT_SHADER;
+            else throw std::runtime_error("Program: unknown file type");
             Shader s(type);
             s.fromFile(filename);
             shaders.push_back(std::move(s));

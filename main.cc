@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <functional>
 
 #include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
@@ -12,6 +13,7 @@
 #include "Shader.h"
 #include "Mesh.h"
 #include "Texture.h"
+#include "Camera.h"
 
 using namespace std;
 using namespace glm;
@@ -24,48 +26,7 @@ using namespace glm;
                     __FILE__, __LINE__, err);                                           \
     } while (0)
 
-static Program getProgram() {
-    static const std::string vertex_src = {
-#include "shader/smooth.vert.inc"
-    };
-
-    static const std::string fragment_src = {
-#include "shader/smooth.frag.inc"
-    };
-
-    static const std::string brdf_src = {
-#include "shader/phong.frag.inc"
-    };
-
-    Program program;
-    {
-        vector<Shader> shaders;
-
-        { // vertex
-            Shader vertex(GL_VERTEX_SHADER);
-            vertex.source(vertex_src);
-            vertex.compile();
-            shaders.push_back(move(vertex));
-        }
-
-        { // fragment
-            Shader fragment(GL_FRAGMENT_SHADER);
-            fragment.source(fragment_src);
-            fragment.compile();
-            shaders.push_back(move(fragment));
-        }
-
-        { // fragment brdf
-            Shader fragment(GL_FRAGMENT_SHADER);
-            fragment.source(brdf_src);
-            fragment.compile();
-            shaders.push_back(move(fragment));
-        }
-
-        program.link(shaders);
-    }
-    return program;
-}
+static std::function<void(int key)> kb_cb;
 
 int main () {
     glfwInit();
@@ -82,35 +43,61 @@ int main () {
     gl3wInit();
 
     glfwSetKeyCallback(window, [](GLFWwindow * window, int key, int scancode, int action, int mode){
-        if (key == GLFW_KEY_Q && action == GLFW_PRESS) exit(0);
+            if (action != GLFW_RELEASE) kb_cb(key);
     });
 
     {
-        Program program = getProgram();
+        Camera camera(
+                {10,0,0}, // eye
+                {0,0,0}, // center
+                {0,0,1}, // up
+                0.5, // fovy
+                1080, 720 // resolution
+                );
+        kb_cb = [&](int key) {
+            switch(key) {
+                case GLFW_KEY_L: camera.rotate(0.05, 0); break;
+                case GLFW_KEY_J: camera.rotate(-0.05, 0); break;
+                case GLFW_KEY_I: camera.rotate(0, 0.05); break;
+                case GLFW_KEY_K: camera.rotate(0, -0.05); break;
+
+                case GLFW_KEY_W: camera.walk(0.05,0,0); break;
+                case GLFW_KEY_S: camera.walk(-0.05,0,0); break;
+                case GLFW_KEY_D: camera.walk(0,0.05,0); break;
+                case GLFW_KEY_A: camera.walk(0,-0.05,0); break;
+                case GLFW_KEY_SPACE: camera.walk(0,0,0.05); break;
+                case GLFW_KEY_TAB: camera.walk(0,0,-0.05); break;
+
+                case GLFW_KEY_Q: exit(0);
+            }
+        };
+
+        Program program;
+        program.fromFiles({
+            "shader/smooth.vert",
+            "shader/smooth.frag",
+            "shader/phong.frag"
+        });
         program.use();
 
         SmoothTriangleMesh mFloor;
         mFloor.fromData(
-                {{1,1,0}, {-1,1,0}, {-1,-1,0}, {1,-1,0}},
-                {{0,1,2}, {2,3,0}}
+            {{1,1,0}, {-1,1,0}, {-1,-1,0}, {1,-1,0}},
+            {{0,1,2}, {2,3,0}}
         );
 
-        FlatTriangleMesh mesh;
+        SmoothTriangleMesh mesh;
         {
             SimpleMesh m;
-            m.readRaw("data/ball.raw");
-            mesh.fromData(m.vertPos, m.face);
+            m.readRaw("data/coke.raw");
+            mesh.fromData(m.vertice, m.face);
         }
 
         mFloor.copyToBuffer();
         mesh.copyToBuffer();
 
-        glCheckError;
-
         mFloor.bindVA(program.attributeLoc("vPos"), program.attributeLoc("vNorm"));
         mesh.bindVA(program.attributeLoc("vPos"), program.attributeLoc("vNorm"));
-
-        glCheckError;
 
         glClearColor(0, .3, .3, 1);
         glEnable(GL_CULL_FACE);
@@ -133,13 +120,11 @@ int main () {
                 //glm::fvec3 eye = glm::fvec3(cosf(t), sinf(t), 1.f) * 10.f;
                 float theta = (x / w - .5) * ((float)w/h) * 2;
                 glm::fvec3 eye = glm::normalize(-glm::fvec3(cos(theta), sin(-theta), -(y / h - .5))) * 10.f;
-                program.uniform("eyePos", eye);
-                program.uniform("proj", glm::perspective(1.0f, 1.f * w / h, 1e-2f, 1e2f) *
-                                 glm::lookAt(eye, glm::fvec3(0, 0, 0), glm::fvec3(0, 0, 1)));
-                glCheckError;
+                program.uniform("eyePos", camera.getEye());
+                program.uniform("proj", camera.getProjMat());
             }
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            program.uniform("trans", glm::translate(glm::fvec3(0, 0, -4.01)) * glm::scale(glm::fvec3(10)));
+            program.uniform("trans", glm::translate(glm::fvec3(0, 0, -4.00)) * glm::scale(glm::fvec3(10)));
             mFloor.draw();
             for (float x = -6; x <= 6; x += 4)
                 for (float y = -6; y <= 6; y += 4)
