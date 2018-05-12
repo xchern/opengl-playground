@@ -9,14 +9,14 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
-#undef STB_IMAGE_IMPLEMENTATION
 
 #include "Shader.h"
 #include "Mesh.h"
 #include "Texture.h"
 #include "Camera.h"
+
+using namespace std;
+using namespace glm;
 
 #define glCheckError                                                                    \
     do {                                                                                \
@@ -25,10 +25,6 @@
             fprintf(stderr, "OpenGL error in file '%s' in line %i, Error Code 0x%x.\n", \
                     __FILE__, __LINE__, err);                                           \
     } while (0)
-
-
-using namespace std;
-using namespace glm;
 
 static std::function<void(int key)> kb_cb;
 
@@ -52,7 +48,7 @@ int main () {
 
     {
         Camera camera(
-                {10,0,1}, // eye
+                {10,0,0}, // eye
                 {0,0,0}, // center
                 {0,0,1}, // up
                 0.5, // fovy
@@ -78,38 +74,33 @@ int main () {
 
         Program program;
         program.fromFiles({
-            "shader/texture.frag",
-            "shader/texture.vert"
+            "shader/phong.frag",
+            "shader/smooth.frag",
+            "shader/smooth.vert"
         });
         program.use();
-        glCheckError;
 
-        TriangleUVMesh mesh;
-        mesh.fromData(
-            {{1,1,0}, {0,1,0}, {0,0,0}, {1,0,0}},
-            {{0,0,1}, {0,0,1}, {0,0,1}, {0,0,1}},
-            {{1,1}, {0,1}, {0,0}, {1,0}},
+        SmoothTriangleMesh mFloor;
+        mFloor.fromData(
+            {{1,1,0}, {-1,1,0}, {-1,-1,0}, {1,-1,0}},
             {{0,1,2}, {2,3,0}}
         );
-        mesh.copyToBuffer();
-        mesh.bindVA(program.attributeLoc("vPos"), program.attributeLoc("vNorm"), program.attributeLoc("vCoord"));
-        glCheckError;
 
-        Texture2D texture;
-        texture.bind();
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        texture.fromFile("data/wall.jpg");
-        glActiveTexture(GL_TEXTURE0);
-        texture.bind();
-        glCheckError;
+        SmoothTriangleMesh mesh;
+        {
+            SimpleMesh m;
+            m.readRaw("data/coke.raw");
+            mesh.fromData(m.vertice, m.face);
+        }
+
+        mFloor.copyToBuffer();
+        mesh.copyToBuffer();
+
+        mFloor.bindVA(program.attributeLoc("vPos"), program.attributeLoc("vNorm"));
+        mesh.bindVA(program.attributeLoc("vPos"), program.attributeLoc("vNorm"));
 
         glClearColor(0, .3, .3, 1);
         glEnable(GL_CULL_FACE);
-        /* glEnable(GL_BLEND); */
-        /* glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); */
         glEnable(GL_MULTISAMPLE);
         glEnable(GL_DEPTH_TEST);
         glCheckError;
@@ -130,9 +121,10 @@ int main () {
             }
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             program.uniform("trans", glm::translate(glm::fvec3(0, 0, -4.00)) * glm::scale(glm::fvec3(10)));
-            for (float x = -4; x <= 4; x += 1.2)
-                for (float y = -4; y <= 4; y += 1.2)
-                    for (float z = 0; z <= 4; z += 1.2) {
+            mFloor.draw();
+            for (float x = -6; x <= 6; x += 4)
+                for (float y = -6; y <= 6; y += 4)
+                    for (float z = 0; z <= 4; z += 4) {
                         program.uniform("trans", glm::translate(glm::fvec3(x, y, z)));
                         mesh.draw();
                     }

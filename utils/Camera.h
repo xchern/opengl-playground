@@ -22,6 +22,9 @@ public:
 
     float getDistance() { return glm::length(eye - center); }
 
+    void setResolution(int w, int h) {
+        width = w; height = h;
+    }
     void rotate(float r, float u, bool lockUp = true) {
         glm::fvec3 dr = eye - center;
         glm::fvec3 axis = glm::cross(glm::normalize(up), glm::normalize(dr));

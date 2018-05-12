@@ -224,9 +224,9 @@ class TriangleUVMesh : public SmoothTriangleMesh {
     std::vector<glm::fvec2> vertCoord;
     ArrayBuffer bufVertCoord;
 public:
-    void fromData(std::vector<glm::fvec3> vertice_, std::vector<glm::ivec3> face_) {
-        SmoothTriangleMesh::fromData(vertice_, face_);
-        vertCoord = std::vector<glm::fvec2> (vertice.size(), {0,0}); // zero coord
+    void fromData(std::vector<glm::fvec3> vertice_, std::vector<glm::fvec3> norm_, std::vector<glm::fvec2> coord_, std::vector<glm::ivec3> face_) {
+        SmoothTriangleMesh::fromData(vertice_, norm_, face_);
+        vertCoord = coord_;
     }
     void copyToBuffer(GLenum usage = GL_STATIC_DRAW) {
         SmoothTriangleMesh::copyToBuffer(usage);
@@ -236,6 +236,6 @@ public:
         SmoothTriangleMesh::bindVA(posLoc, normLoc);
         bufVertCoord.bind();
         glVertexAttribPointer(coordLoc, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void *)0);
-        glEnableVertexAttribArray(normLoc);
+        glEnableVertexAttribArray(coordLoc);
     }
 };

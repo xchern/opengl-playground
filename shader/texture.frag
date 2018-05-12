@@ -6,7 +6,7 @@ in vec3 fNorm;
 in vec3 fEye;
 in vec2 fCoord;
 
-out vec3 fColor; 
+out vec4 fColor; 
 
 vec3 Uncharted2ToneMapping(vec3 color) {
     float gamma = 2.2;
@@ -29,8 +29,9 @@ vec3 Uncharted2ToneMapping(vec3 color) {
 void main () {
     vec3 v = normalize(fEye);
     vec3 n = normalize(fNorm);
-    vec3 l = lightDir;
-    fColor = brdf(l, n, v);
-    fColor = Uncharted2ToneMapping(fColor);
+    fColor = texture(colorTex, fCoord);
+    if (fColor.a < 0.1) discard;
+
+    //fColor = Uncharted2ToneMapping(fColor);
     //fColor = vec3(gl_FragCoord.z);
 }

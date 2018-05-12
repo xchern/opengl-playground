@@ -94,7 +94,9 @@ struct Program {
                 type = GL_VERTEX_SHADER;
             else if (ext == ".frag")
                 type = GL_FRAGMENT_SHADER;
-            else throw std::runtime_error("Program: unknown file type");
+            else throw std::runtime_error(
+                std::string("Program: unknown file type: ") + filename
+            );
             Shader s(type);
             s.fromFile(filename);
             shaders.push_back(std::move(s));
@@ -129,10 +131,14 @@ struct Program {
     }
     void use() { glUseProgram(program); }
     GLint attributeLoc(const std::string &name) {
-        return glGetAttribLocation(program, name.c_str());
+        GLint r = glGetAttribLocation(program, name.c_str());
+        if (r == -1) fprintf(stderr, "%s\n", (std::string() + "Program: " + name + " is not an active uniform variable").c_str());
+        return r;
     }
     GLint uniformLoc(const std::string &name) {
-        return glGetUniformLocation(program, name.c_str());
+        GLint r = glGetUniformLocation(program, name.c_str());
+        if (r == -1) fprintf(stderr, "%s\n", (std::string() + "Program: " + name + " is not an active attribute variable").c_str());
+        return r;
     }
     // overload with glm vector types and stl containners
     void uniform(const std::string & name, float value) {
