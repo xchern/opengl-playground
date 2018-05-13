@@ -143,6 +143,10 @@ public:
         va.bind();
         glDrawArrays(GL_TRIANGLES, 0, face.size() * 3);
     }
+    void drawInstanced(GLint primcount) {
+        va.bind();
+        glDrawArraysInstanced(GL_TRIANGLES, 0, face.size() * 3, primcount);
+    }
 };
 
 class SmoothTriangleMesh : public FlatTriangleMesh {
@@ -217,6 +221,10 @@ public:
     void draw() {
         va.bind();
         glDrawElements(GL_TRIANGLES, face.size() * 3, GL_UNSIGNED_INT, (void *) 0);
+    }
+    void drawInstanced(GLint primcount) {
+        va.bind();
+        glDrawElementsInstanced(GL_TRIANGLES, face.size() * 3, GL_UNSIGNED_INT, (void *)0, primcount);
     }
 };
 

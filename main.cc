@@ -52,9 +52,9 @@ int main () {
 
     {
         Camera camera(
-                {10,0,1}, // eye
+                {0,0,10}, // eye
                 {0,0,0}, // center
-                {0,0,1}, // up
+                {0,1,0}, // up
                 0.5, // fovy
                 1080, 720 // resolution
                 );
@@ -93,14 +93,42 @@ int main () {
         );
         mesh.copyToBuffer();
         mesh.bindVA(program.attributeLoc("vPos"), program.attributeLoc("vNorm"), program.attributeLoc("vCoord"));
+        //mesh.bindVA(program.attributeLoc("vPos"), program.attributeLoc("vNorm"));
         glCheckError;
+
+        ArrayBuffer bufTrans;
+        std::vector<glm::fmat4> trans;
+        {
+            for (float x = -4; x <= 4; x += 1.2)
+                for (float y = -4; y <= 4; y += 1.2)
+                    for (float z = 0; z <= 4; z += 1.2) {
+                        trans.push_back(glm::translate(glm::fvec3(x, y, z)));
+                    }
+            int transLoc = program.attributeLoc("trans");
+            bufTrans.data(trans.size() * sizeof(glm::fmat4), trans.data(), GL_STATIC_DRAW);
+            glVertexAttribPointer(transLoc, 4, GL_FLOAT, GL_FALSE, sizeof(glm::fmat4), (void *)0);
+            glVertexAttribPointer(transLoc + 1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::fmat4), (void *)(4 * sizeof(float)));
+            glVertexAttribPointer(transLoc + 2, 4, GL_FLOAT, GL_FALSE, sizeof(glm::fmat4), (void *)(8 * sizeof(float)));
+            glVertexAttribPointer(transLoc + 3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::fmat4), (void *)(12 * sizeof(float)));
+            glEnableVertexAttribArray(transLoc);
+            glEnableVertexAttribArray(transLoc + 1);
+            glEnableVertexAttribArray(transLoc + 2);
+            glEnableVertexAttribArray(transLoc + 3);
+            glCheckError;
+
+            glVertexAttribDivisor(transLoc, 1);  
+            glVertexAttribDivisor(transLoc + 1, 1);  
+            glVertexAttribDivisor(transLoc + 2, 1);  
+            glVertexAttribDivisor(transLoc + 3, 1);  
+            glCheckError;
+        }
 
         Texture2D texture;
         texture.bind();
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        /* glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); */	
+        /* glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT); */
+        /* glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); */
+        /* glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); */
         texture.fromFile("data/wall.jpg");
         glActiveTexture(GL_TEXTURE0);
         texture.bind();
@@ -115,7 +143,6 @@ int main () {
         glCheckError;
         //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         while (!glfwWindowShouldClose(window)) {
-            glm::mat4 proj;
             {
                 int w, h;
                 double x, y;
@@ -123,19 +150,13 @@ int main () {
                 glfwGetCursorPos(window, &x, &y);
                 glViewport(0, 0, w, h);
                 camera.setResolution(w, h);
-                program.uniform("lightDir", glm::normalize(glm::fvec3(.1, x/w-.5, -(y/h-.5))));
+                /* program.uniform("lightDir", glm::normalize(glm::fvec3(.1, x/w-.5, -(y/h-.5)))); */
                 //program.uniform("lightDir", glm::normalize(glm::fvec3(1, 2, 3)));
-                program.uniform("eyePos", camera.getEye());
+                /* program.uniform("eyePos", camera.getEye()); */
                 program.uniform("proj", camera.getProjMat());
             }
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            program.uniform("trans", glm::translate(glm::fvec3(0, 0, -4.00)) * glm::scale(glm::fvec3(10)));
-            for (float x = -4; x <= 4; x += 1.2)
-                for (float y = -4; y <= 4; y += 1.2)
-                    for (float z = 0; z <= 4; z += 1.2) {
-                        program.uniform("trans", glm::translate(glm::fvec3(x, y, z)));
-                        mesh.draw();
-                    }
+            mesh.drawInstanced(trans.size());
             glCheckError;
             //glFlush();
             glfwSwapBuffers(window);

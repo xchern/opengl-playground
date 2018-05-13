@@ -1,12 +1,12 @@
 #version 330
 
 uniform mat4 proj;
-uniform mat4 trans;
 uniform vec3 eyePos;
 
 in vec3 vPos;
 in vec3 vNorm;
 in vec2 vCoord;
+in mat4 trans;
 
 out vec3 fNorm;
 out vec3 fEye;
