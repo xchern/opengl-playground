@@ -9,18 +9,44 @@
 #include <glm/glm.hpp>
 #include <GL/gl3w.h>
 
-struct Shader {
-    GLuint shader;
-    Shader(GLenum type) {
-        shader = glCreateShader(type);
+#include "BaseObject.h"
+
+class Shader : public BaseObject<Shader> {
+    using Base = BaseObject<Shader>;
+    friend Base;
+public:
+    Shader(GLenum type) : Base(glCreateShader(type)) {}
+private:
+    void deleteObject() {
+        glDeleteShader(Base::objectId);
     }
-    Shader(Shader && s) {
-        shader = s.shader;
-        s.shader = 0;
+protected:
+    void source(const std::vector<std::string> & srcs) {
+        std::vector<const char *> string;
+        std::vector<int> length;
+        for (const std::string & src : srcs) {
+            string.push_back(src.c_str());
+            length.push_back(src.size());
+        }
+        glShaderSource(Base::objectId, srcs.size(), &string[0], &length[0]);
     }
-    Shader(const Shader &) = delete;
-    ~Shader() { if (shader) glDeleteShader(shader); }
-    Shader &operator=(const Shader &) = delete;
+    void compile(void) {
+        glCompileShader(Base::objectId);
+        if (!compileStatus()) throw std::runtime_error(infoLog());
+    }
+    GLboolean compileStatus(void) {
+        GLint isCompiled = 0;
+        glGetShaderiv(Base::objectId, GL_COMPILE_STATUS, &isCompiled);
+        return isCompiled;
+    }
+    std::string infoLog() {
+        GLint maxLength = 0; // The maxLength includes the NULL character
+        glGetShaderiv(Base::objectId, GL_INFO_LOG_LENGTH, &maxLength);
+        std::string errorLog(maxLength, '\0');
+        glGetShaderInfoLog(Base::objectId, maxLength, &maxLength, &errorLog[0]);
+        return std::string(&errorLog[0]);
+    }
+public:
     void fromFile(std::string filename) {
         // reading
         std::ifstream ifs(filename);
@@ -31,59 +57,58 @@ struct Shader {
                        std::istreambuf_iterator<char>());
 
         // compiling
-        source(content);
         try {
-            compile();
+            fromSource({content});
         } catch (std::runtime_error & e) {
             throw std::runtime_error(
-                std::string("Shader compiling file: ") + filename + "\n" + e.what()
+                std::string("Shader compiling files: ") + filename + "\n" + e.what()
             );
         }
     }
-    // simple wrappers for working with stl
-    void source(const std::string & src) {
-        source(std::vector<std::string>({src}));
-    }
-    void source(const std::vector<std::string> & srcs) {
-        std::vector<const char *> string;
-        std::vector<int> length;
-        for (const std::string & src : srcs) {
-            string.push_back(src.c_str());
-            length.push_back(src.size());
-        }
-        glShaderSource(shader, srcs.size(), &string[0], &length[0]);
-    }
-    void compile(void) {
-        glCompileShader(shader);
-        if (!compileStatus())
-            throw std::runtime_error(infoLog());
-    }
-    GLboolean compileStatus(void) {
-        GLint isCompiled = 0;
-        glGetShaderiv(shader, GL_COMPILE_STATUS, &isCompiled);
-        return isCompiled;
-    }
-    std::string infoLog() {
-        GLint maxLength = 0; // The maxLength includes the NULL character
-        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &maxLength);
-        std::string errorLog(maxLength, '\0');
-        glGetShaderInfoLog(shader, maxLength, &maxLength, &errorLog[0]);
-        return std::string(&errorLog[0]);
+    void fromSource(std::vector<std::string> srcs) {
+        source(srcs);
+        compile();
     }
 };
 
-struct Program {
-    GLuint program;
-    Program() {
-        program = glCreateProgram();
+class Program : public BaseObject<Program> {
+    using Base = BaseObject<Program>;
+    friend Base;
+private:
+    void genObject () { Base::objectId = glCreateProgram(); }
+    void deleteObject() { glDeleteProgram(Base::objectId); }
+protected:
+    void attach(const Shader &shader) { glAttachShader(Base::objectId, shader.getObjectId()); }
+    void detach(const Shader &shader) { glDetachShader(Base::objectId, shader.getObjectId()); }
+    void link(void) {
+        glLinkProgram(Base::objectId);
+        if (!linkStatus())
+            throw std::runtime_error(std::string("Program linking:\n") + infoLog());
     }
-    Program(Program && p) {
-        program = p.program;
-        p.program = 0;
+    GLboolean linkStatus() {
+        GLint isLinked = 0;
+        glGetProgramiv(Base::objectId, GL_LINK_STATUS, &isLinked);
+        return isLinked;
     }
-    Program(const Program&) = delete;
-    ~Program() { if (program) glDeleteProgram(program); }
-    Program &operator=(const Program &) = delete;
+    std::string infoLog(void) {
+        GLint maxLength = 0;
+        glGetProgramiv(Base::objectId, GL_INFO_LOG_LENGTH, &maxLength);
+        std::string infoLog(maxLength, '\0');
+        glGetProgramInfoLog(Base::objectId, maxLength, &maxLength, &infoLog[0]);
+        return std::string(&infoLog[0]);
+    }
+public:
+    void use() { glUseProgram(Base::objectId); }
+    GLint attributeLoc(const std::string &name) {
+        GLint r = glGetAttribLocation(Base::objectId, name.c_str());
+        if (r == -1) fprintf(stderr, "%s\n", (std::string() + "Program: " + name + " is not an active uniform variable").c_str());
+        return r;
+    }
+    GLint uniformLoc(const std::string &name) {
+        GLint r = glGetUniformLocation(Base::objectId, name.c_str());
+        if (r == -1) fprintf(stderr, "%s\n", (std::string() + "Program: " + name + " is not an active attribute variable").c_str());
+        return r;
+    }
     void fromFiles(std::vector<std::string> files) {
         // reading & compiling files
         std::vector<Shader> shaders;
@@ -105,40 +130,10 @@ struct Program {
         link(shaders);
     }
     // simple wrappers for working with stl
-    void attach(const Shader &shader) { glAttachShader(program, shader.shader); }
-    void detach(const Shader &shader) { glDetachShader(program, shader.shader); }
     void link(const std::vector<Shader> & shaders) {
         for (const Shader & s : shaders) attach(s);
         link();
         for (const Shader & s : shaders) detach(s);
-    }
-    void link(void) {
-        glLinkProgram(program);
-        if (!linkStatus())
-            throw std::runtime_error(std::string("Program linking:\n") + infoLog());
-    }
-    GLboolean linkStatus() {
-        GLint isLinked = 0;
-        glGetProgramiv(program, GL_LINK_STATUS, &isLinked);
-        return isLinked;
-    }
-    std::string infoLog(void) {
-        GLint maxLength = 0;
-        glGetProgramiv(program, GL_INFO_LOG_LENGTH, &maxLength);
-        std::string infoLog(maxLength, '\0');
-        glGetProgramInfoLog(program, maxLength, &maxLength, &infoLog[0]);
-        return std::string(&infoLog[0]);
-    }
-    void use() { glUseProgram(program); }
-    GLint attributeLoc(const std::string &name) {
-        GLint r = glGetAttribLocation(program, name.c_str());
-        if (r == -1) fprintf(stderr, "%s\n", (std::string() + "Program: " + name + " is not an active uniform variable").c_str());
-        return r;
-    }
-    GLint uniformLoc(const std::string &name) {
-        GLint r = glGetUniformLocation(program, name.c_str());
-        if (r == -1) fprintf(stderr, "%s\n", (std::string() + "Program: " + name + " is not an active attribute variable").c_str());
-        return r;
     }
     // overload with glm vector types and stl containners
     void uniform(const std::string & name, float value) {
@@ -152,6 +147,9 @@ struct Program {
     }
     void uniform(const std::string & name, glm::fvec4 value) {
         glUniform4fv(uniformLoc(name), 1, &value[0]);
+    }
+    void uniform(const std::string & name, glm::fmat3 value) {
+        glUniformMatrix3fv(uniformLoc(name), 1, GL_FALSE, &value[0][0]);
     }
     void uniform(const std::string & name, glm::fmat4 value) {
         glUniformMatrix4fv(uniformLoc(name), 1, GL_FALSE, &value[0][0]);

@@ -1,36 +1,30 @@
 #pragma once
 
-#include <string>
+#include "BaseObject.h"
 
-#include <GL/gl3w.h>
+#include <string>
 #include <stb_image.h>
 
-class Texture {
-protected:
-    GLuint texture;
-    ~Texture() {
-        glDeleteTextures(1, &texture);
+class Texture : public BaseObject<Texture> {
+    friend class BaseObject<Texture>;
+private:
+    void genObject() {
+        glGenTextures(1, &objectId);
     }
-    Texture() {
-        glGenTextures(1, &texture);
-    }
-    Texture(const Texture &) = delete;
-    Texture &operator=(const Texture &) = delete;
-    Texture(Texture && t) {
-        texture = t.texture;
-        t.texture = 0;
+    void deleteObject() {
+        glDeleteTextures(1, &objectId);
     }
 };
 
 class Texture2D : public Texture {
 public:
-    void bind() { glBindTexture(GL_TEXTURE_2D, texture); }
-    void fromMemory(GLsizei width, GLsizei height, GLint format, const GLubyte * data) {
+    void bind() { glBindTexture(GL_TEXTURE_2D, objectId); }
+    void loadMemory(GLsizei width, GLsizei height, GLint format, const GLubyte * data) {
         bind();
         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
     }
-    void fromFile(std::string filename) {
+    void loadFile(std::string filename) {
         // load and generate the texture
         int width, height, nrChannels;
         stbi_set_flip_vertically_on_load(true);
@@ -41,7 +35,7 @@ public:
                 case 3: format = GL_RGB; break;
                 case 4: format = GL_RGBA; break;
             }
-            fromMemory(width, height, format, data);
+            loadMemory(width, height, format, data);
         }
         else
         {

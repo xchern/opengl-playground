@@ -1,39 +1,27 @@
 #pragma once
 
-#include <GL/gl3w.h>
+#include "BaseObject.h"
 
-class Buffer {
-protected:
-    GLuint buffer;
-    Buffer() { glGenBuffers(1, &buffer); }
-    ~Buffer() {
-        if (buffer)
-            glDeleteBuffers(1, &buffer);
+template <GLenum target>
+class Buffer : public BaseObject<Buffer<target>> {
+    using Base = BaseObject<Buffer>;
+    friend Base;
+private:
+    void genObject() {
+        glGenBuffers(1, &(Base::objectId));
     }
-    Buffer(Buffer && b) {
-        buffer = b.buffer;
-        b.buffer = 0;
+    void deleteObject() {
+        glDeleteBuffers(1, &(Base::objectId));
     }
-    Buffer(const Buffer &) = delete;
-    Buffer &operator=(const Buffer &) = delete;
-};
-
-class ArrayBuffer : public Buffer {
 public:
-    void bind() { glBindBuffer(GL_ARRAY_BUFFER, buffer); }
+    void bind() { glBindBuffer(target, Base::objectId); }
     void data(GLsizeiptr size, const GLvoid *data,
               GLenum usage = GL_STATIC_DRAW) {
         bind();
-        glBufferData(GL_ARRAY_BUFFER, size, data, usage);
+        glBufferData(target, size, data, usage);
     }
 };
 
-class ElementArrayBuffer : public Buffer {
-public:
-    void bind() { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer); }
-    void data(GLsizeiptr size, const GLvoid *data,
-              GLenum usage = GL_STATIC_DRAW) {
-        bind();
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, usage);
-    }
-};
+class ArrayBuffer : public Buffer<GL_ARRAY_BUFFER> {};
+
+class ElementArrayBuffer : public Buffer<GL_ELEMENT_ARRAY_BUFFER> {};

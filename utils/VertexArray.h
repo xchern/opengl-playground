@@ -1,22 +1,13 @@
 #pragma once
 
-#include <GL/gl3w.h>
+#include "BaseObject.h"
 
-class VertexArray {
-    GLuint va;
+class VertexArray : BaseObject<VertexArray>{
+    using Base = BaseObject<VertexArray>;
+    friend Base;
+private:
+    void genObject() { glGenVertexArrays(1, &(Base::objectId)); }
+    void deleteObject() { glDeleteVertexArrays(1, &(Base::objectId)); }
 public:
-    VertexArray() {
-        glGenVertexArrays(1, &va);
-    }
-    ~VertexArray() {
-        if (va)
-            glDeleteVertexArrays(1, &va);
-    }
-    VertexArray(VertexArray && v) {
-        va = v.va;
-        v.va = 0;
-    }
-    VertexArray(const VertexArray &) = delete;
-    VertexArray &operator=(const VertexArray &) = delete;
-    void bind() { glBindVertexArray(va); }
+    void bind() { glBindVertexArray(Base::objectId); }
 };
