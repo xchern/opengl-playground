@@ -47,7 +47,7 @@ protected:
         return std::string(&errorLog[0]);
     }
 public:
-    void fromFile(std::string filename) {
+    void loadFile(std::string filename) {
         // reading
         std::ifstream ifs(filename);
         if (!ifs.is_open()) {
@@ -58,14 +58,14 @@ public:
 
         // compiling
         try {
-            fromSource({content});
+            loadSource({content});
         } catch (std::runtime_error & e) {
             throw std::runtime_error(
                 std::string("Shader compiling files: ") + filename + "\n" + e.what()
             );
         }
     }
-    void fromSource(std::vector<std::string> srcs) {
+    void loadSource(std::vector<std::string> srcs) {
         source(srcs);
         compile();
     }
@@ -109,7 +109,7 @@ public:
         if (r == -1) fprintf(stderr, "%s\n", (std::string() + "Program: " + name + " is not an active attribute variable").c_str());
         return r;
     }
-    void fromFiles(std::vector<std::string> files) {
+    void loadFiles(std::vector<std::string> files) {
         // reading & compiling files
         std::vector<Shader> shaders;
         for (const std::string &filename : files) {
@@ -123,7 +123,7 @@ public:
                 std::string("Program: unknown file type: ") + filename
             );
             Shader s(type);
-            s.fromFile(filename);
+            s.loadFile(filename);
             shaders.push_back(std::move(s));
         }
         // linking

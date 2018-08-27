@@ -6,8 +6,6 @@
 #include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
-#include <glm/gtx/transform.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -77,7 +75,7 @@ int main () {
         };
 
         Program program;
-        program.fromFiles({
+        program.loadFiles({
             "shader/texture.frag",
             "shader/texture.vert"
         });
@@ -85,7 +83,7 @@ int main () {
         glCheckError;
 
         TriangleUVMesh mesh;
-        mesh.fromData(
+        mesh.loadData(
             {{1,1,0}, {0,1,0}, {0,0,0}, {1,0,0}},
             {{0,0,1}, {0,0,1}, {0,0,1}, {0,0,1}},
             {{1,1}, {0,1}, {0,0}, {1,0}},
@@ -129,7 +127,7 @@ int main () {
         /* glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT); */
         /* glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); */
         /* glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); */
-        texture.fromFile("data/wall.jpg");
+        texture.loadFile("data/wall.jpg");
         glActiveTexture(GL_TEXTURE0);
         texture.bind();
         glCheckError;

@@ -38,7 +38,7 @@ int main (int argc, const char ** argv) {
     gl3wInit();
 
     Program prog;
-    prog.fromFiles(std::vector<std::string>(argv + 1, argv + argc));
+    prog.loadFiles(std::vector<std::string>(argv + 1, argv + argc));
 
     glfwTerminate();
 }

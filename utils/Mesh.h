@@ -100,7 +100,7 @@ protected:
     ArrayBuffer bufVertPos, bufVertNorm;
     VertexArray va;
 public:
-    void fromData(std::vector<glm::fvec3> vertice_, std::vector<glm::ivec3> face_) {
+    void loadData(std::vector<glm::fvec3> vertice_, std::vector<glm::ivec3> face_) {
         vertice = vertice_;
         face = face_;
         calcFaceNorm();
@@ -157,11 +157,11 @@ protected:
     // opengl
     ElementArrayBuffer bufFace;
 public:
-    void fromData(std::vector<glm::fvec3> vertice_, std::vector<glm::ivec3> face_) {
-        FlatTriangleMesh::fromData(vertice_, face_);
+    void loadData(std::vector<glm::fvec3> vertice_, std::vector<glm::ivec3> face_) {
+        FlatTriangleMesh::loadData(vertice_, face_);
         calcVertexNorm();
     }
-    void fromData(
+    void loadData(
             std::vector<glm::fvec3> vertice_,
             std::vector<glm::fvec3> vertNorm_,
             std::vector<glm::ivec3> face_
@@ -232,8 +232,8 @@ class TriangleUVMesh : public SmoothTriangleMesh {
     std::vector<glm::fvec2> vertCoord;
     ArrayBuffer bufVertCoord;
 public:
-    void fromData(std::vector<glm::fvec3> vertice_, std::vector<glm::fvec3> norm_, std::vector<glm::fvec2> coord_, std::vector<glm::ivec3> face_) {
-        SmoothTriangleMesh::fromData(vertice_, norm_, face_);
+    void loadData(std::vector<glm::fvec3> vertice_, std::vector<glm::fvec3> norm_, std::vector<glm::fvec2> coord_, std::vector<glm::ivec3> face_) {
+        SmoothTriangleMesh::loadData(vertice_, norm_, face_);
         vertCoord = coord_;
     }
     void copyToBuffer(GLenum usage = GL_STATIC_DRAW) {

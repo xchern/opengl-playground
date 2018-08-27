@@ -6,7 +6,8 @@
 #include <stb_image.h>
 
 class Texture : public BaseObject<Texture> {
-    friend class BaseObject<Texture>;
+    using Base = BaseObject<Texture>;
+    friend Base;
 private:
     void genObject() {
         glGenTextures(1, &objectId);
