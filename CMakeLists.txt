@@ -5,8 +5,10 @@ project(opengl-playground)
 add_subdirectory(${CMAKE_SOURCE_DIR}/gl3w)
 
 include_directories(
+    ${CMAKE_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/gl3w
     ${CMAKE_SOURCE_DIR}/utils
+    ${CMAKE_SOURCE_DIR}/GLObject
     )
 
 add_executable(checkShader

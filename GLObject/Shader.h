@@ -148,6 +148,9 @@ public:
     void uniform(const std::string & name, glm::fvec4 value) {
         glUniform4fv(uniformLoc(name), 1, &value[0]);
     }
+    void uniform(const std::string & name, glm::fmat2 value) {
+        glUniformMatrix2fv(uniformLoc(name), 1, GL_FALSE, &value[0][0]);
+    }
     void uniform(const std::string & name, glm::fmat3 value) {
         glUniformMatrix3fv(uniformLoc(name), 1, GL_FALSE, &value[0][0]);
     }

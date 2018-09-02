@@ -6,8 +6,8 @@
 #include <glm/gtx/rotate_vector.hpp>
 
 class Camera {
-public:
     glm::fvec3 eye, center, up; float fovy;
+public:
     int width, height;
 
     Camera(glm::fvec3 eye_, glm::fvec3 center_, glm::fvec3 up_, float fovy_, int width_, int height_) :
@@ -15,15 +15,15 @@ public:
         width(width_), height(height_)
     {}
 
+    float getFovy() { return fovy; }
+    glm::fvec3 getEye() { return eye; }
+    float getDistance() { return glm::length(eye - center); }
+
     glm::fmat4 getProjMat(void) {
         float dist = getDistance();
         return glm::perspective(fovy, (float) width / height, 5e-2f * dist, 2e2f * dist)
             * glm::lookAt(eye, center, up);
     }
-    glm::fvec3 getEye() { return eye; }
-
-    float getDistance() { return glm::length(eye - center); }
-
     void setResolution(int w, int h) {
         width = w; height = h;
     }

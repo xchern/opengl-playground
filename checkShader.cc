@@ -8,6 +8,7 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 
+#include "GLFWUtil.h"
 #include "Shader.h"
 
 using namespace std;
@@ -25,20 +26,19 @@ using namespace std;
 */
 
 int main (int argc, const char ** argv) {
-    glfwInit();
+    GLFWInit glfwInit;
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     //glfwWindowHint(GLFW_DOUBLEBUFFER, 0);
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
     GLFWwindow * window = glfwCreateWindow(8, 8, "OpenGLContext", NULL, NULL);
-    glfwHideWindow(window);
+    //glfwHideWindow(window);
     glfwMakeContextCurrent(window);
     gl3wInit();
 
     Program prog;
     prog.loadFiles(std::vector<std::string>(argv + 1, argv + argc));
-
-    glfwTerminate();
 }
