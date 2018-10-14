@@ -1,69 +1,12 @@
 #include "ImGuiApp.h"
+#include "glshader_helper.h"
 #include <string>
-
-bool compileShader(GLuint shader, int count, const char * srcs[]) {
-    glShaderSource(shader, count, srcs, NULL);
-    glCompileShader(shader);
-    GLint isCompiled;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &isCompiled);
-    return isCompiled;
-}
-
-bool compileShader(GLuint shader, const char * src) {
-    return compileShader(shader, 1, &src);
-}
-
-bool linkProgram(GLuint program, GLuint vert_shdr, GLuint frag_shdr) {
-    
-    glAttachShader(program, vert_shdr);
-    glAttachShader(program, frag_shdr);
-    glLinkProgram(program);
-    glDetachShader(program, vert_shdr);
-    glDetachShader(program, frag_shdr);
-    GLint isLinked;
-    glGetProgramiv(program, GL_LINK_STATUS, &isLinked);
-    return isLinked;
-}
-
-std::string getShaderInfoLog(GLuint shader) {
-    GLint maxLength; // The maxLength includes the NULL character
-    glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &maxLength);
-    std::string errorLog(maxLength, '\0');
-    glGetShaderInfoLog(shader, maxLength, &maxLength, &errorLog[0]);
-    return &errorLog[0];
-}
-
-std::string getProgramInfoLog(GLuint program) {
-    GLint maxLength;
-    glGetProgramiv(program, GL_INFO_LOG_LENGTH, &maxLength);
-    std::string infoLog(maxLength, '\0');
-    glGetProgramInfoLog(program, maxLength, &maxLength, &infoLog[0]);
-    return infoLog.c_str();
-}
-
-std::string readFile(const char * filename) {
-    FILE * fp = fopen(filename, "r");
-    if (!fp) return "";
-    // obtain file size:
-    fseek (fp , 0 , SEEK_END);
-    size_t size = ftell(fp);
-    rewind (fp);
-    // readfile
-    std::string content(size + 1, '\0');
-    size_t result = fread (&content[0], 1, size, fp);
-    if (result != size) {
-        fputs("error reading file", stderr);
-        return "";
-    }
-    fclose(fp);
-    return content.c_str();
-}
 
 static const char vert_src[] = R"(
 #version 330
 layout (location = 0) in vec2 pos;
 void main () {
-    gl_Position = vec4(pos, 0, 1);
+    gl_Position = vec4(pos, 0.0, 1.0);
 }
 )";
 static const char frag_hd[] = R"(
@@ -79,7 +22,7 @@ uniform int       iFrame;
 uniform float     iTimeDelta;
 uniform float     iFrameRate;
 
-// textures
+// TODO: textures 
 /* uniform sampler2D iChannel%d; */
 /* uniform samplerCube iChannel%d; */
 /* uniform sampler3D iChannel%d; */
@@ -96,7 +39,7 @@ void main( void ) {
 
 class ShaderToy {
 private:
-    char file[64] = "shader.glsl";
+    char file[64] = "";
     GLuint vertex, fragment, program;
     GLuint vertBuf;
     GLuint vao;
@@ -118,8 +61,10 @@ public:
         glBindVertexArray(vao);
         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void *)0);
         glEnableVertexAttribArray(0);
-        loadShaderProgram();
-        glCheckError();
+
+        if (!compileShader(vertex, vert_src))
+            printf("shader log: %s\n", getShaderInfoLog(vertex).c_str());
+        loadShaderToy("void mainImage(out vec4 c, in vec2 f) {c=vec4(f/iResolution.xy,1,1);}");
     }
     ~ShaderToy() {
         glDeleteVertexArrays(1, &vao);
@@ -128,25 +73,24 @@ public:
         glDeleteShader(fragment);
         glDeleteProgram(program);
     }
-    void loadShaderProgram() {
-        auto shadertoy_src = readFile(file);
-        if (!compileShader(vertex, vert_src))
-            printf("shader log: %s\n", getShaderInfoLog(vertex).c_str());
-        const char * srcs[] = {frag_hd, shadertoy_src.c_str()};
+
+    void setFile(const char * filename) {
+        strncpy(file, filename, 64);
+        loadShaderToy(readFile(file).c_str());
+        glCheckError();
+    }
+
+    void loadShaderToy(const char * shadertoy_src) {
+        const char * srcs[] = {frag_hd, shadertoy_src};
         if (!compileShader(fragment, 2, srcs))
             printf("shader log: %s\n", getShaderInfoLog(fragment).c_str());
         bool isLinked = linkProgram(program, vertex, fragment);
         if (!isLinked) printf("program log: %s\n", getProgramInfoLog(program).c_str());
     }
     void update() {
-        ImGui::Begin("shader debug");
-
-        {
-            ImGui::InputText("glsl file", file, sizeof(file));
-            if (ImGui::Button("load program"))
-                loadShaderProgram();
-        }
-        ImGui::End();
+        ImGui::InputText("glsl file", file, sizeof(file));
+        if (ImGui::Button("load program"))
+            loadShaderToy(readFile(file).c_str());
     }
     void draw() {
         glUseProgram(program);
@@ -159,13 +103,14 @@ public:
             int timeLoc = glGetUniformLocation(program, "iTime");
             glUniform1f(timeLoc, ImGui::GetTime());
         }
-        glCheckError();
     }
 };
 
 class App : public ImGui::App {
 public:
-    App() : ImGui::App("shadertoy") {}
+    App(int argc, char ** argv) : ImGui::App("shadertoy", 800, 600) {
+        if (argc == 2) st.setFile(argv[1]);
+    }
 private:
     ShaderToy st;
     virtual void update() override {
@@ -177,6 +122,6 @@ private:
     }
 };
 
-int main() {
-    return App().exec();
+int main(int argc, char ** argv) {
+    return App(argc, argv).exec();
 }
