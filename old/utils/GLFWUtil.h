@@ -1,7 +1,8 @@
 #pragma once
 
-#include <GLFW/glfw3.h>
 #include <GL/gl3w.h>
+#include <GLFW/glfw3.h>
+#include <cassert>
 
 #include <map>
 

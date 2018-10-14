@@ -1,28 +1,40 @@
-cmake_minimum_required(VERSION 2.6)
+include_directories(.)
+include_directories(imgui)
+include_directories(imgui-app)
 
-project(opengl-playground)
-
-add_subdirectory(${CMAKE_SOURCE_DIR}/gl3w)
-
-include_directories(
-    ${CMAKE_SOURCE_DIR}
-    ${CMAKE_SOURCE_DIR}/gl3w
-    ${CMAKE_SOURCE_DIR}/utils
-    ${CMAKE_SOURCE_DIR}/GLObject
+add_library(imgui
+    imgui/imconfig.h
+    imgui/imgui.cpp
+    imgui/imgui_demo.cpp
+    imgui/imgui_draw.cpp
+    imgui/imgui.h
+    imgui/imgui_internal.h
+    imgui/imgui_widgets.cpp
+    imgui/imstb_rectpack.h
+    imgui/imstb_textedit.h
+    imgui/imstb_truetype.h
     )
 
-add_executable(checkShader
-    checkShader.cc
+add_library(imgui-app
+    imgui-app/ImGuiApp.cpp
+    imgui-app/ImGuiApp.h
+    imgui-app/imgui_impl_opengl3.cpp
+    imgui-app/imgui_impl_opengl3.h
+    imgui-app/imgui_impl_glfw.cpp
+    imgui-app/imgui_impl_glfw.h
+    GL/gl3w.c
+    GL/gl3w.h
     )
-target_link_libraries(checkShader
-    gl3w
+target_link_libraries(imgui-app
+    imgui
+    GL
     glfw
+    dl
     )
 
 add_executable(main
     main.cc
     )
 target_link_libraries(main
-    gl3w
-    glfw
+    imgui-app
     )
