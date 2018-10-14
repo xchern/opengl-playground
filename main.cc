@@ -20,7 +20,7 @@ bool linkProgram(GLuint program, GLuint vert_shdr, GLuint frag_shdr) {
     glLinkProgram(program);
     glDetachShader(program, vert_shdr);
     glDetachShader(program, frag_shdr);
-    GLint isLinked = 0;
+    GLint isLinked;
     glGetProgramiv(program, GL_LINK_STATUS, &isLinked);
     return isLinked;
 }
@@ -34,7 +34,7 @@ std::string getShaderInfoLog(GLuint shader) {
 }
 
 std::string getProgramInfoLog(GLuint program) {
-    GLint maxLength = 0;
+    GLint maxLength;
     glGetProgramiv(program, GL_INFO_LOG_LENGTH, &maxLength);
     std::string infoLog(maxLength, '\0');
     glGetProgramInfoLog(program, maxLength, &maxLength, &infoLog[0]);
@@ -59,15 +59,49 @@ std::string readFile(const char * filename) {
     return content.c_str();
 }
 
-class App : public ImGui::App {
+static const char vert_src[] = R"(
+#version 330
+layout (location = 0) in vec2 pos;
+void main () {
+    gl_Position = vec4(pos, 0, 1);
+}
+)";
+static const char frag_hd[] = R"(
+#version 330
+uniform vec3      iResolution;
+uniform float     iTime;
+uniform float     iChannelTime[4];
+uniform vec4      iMouse;
+uniform vec4      iDate;
+uniform float     iSampleRate;
+uniform vec3      iChannelResolution[4];
+uniform int       iFrame;
+uniform float     iTimeDelta;
+uniform float     iFrameRate;
+
+// textures
+/* uniform sampler2D iChannel%d; */
+/* uniform samplerCube iChannel%d; */
+/* uniform sampler3D iChannel%d; */
+
+void mainImage( out vec4 c,  in vec2 f );
+
+out vec4 outColor;
+void main( void ) {
+    vec4 color = vec4(0.0,0.0,0.0,1.0);
+    mainImage( color, gl_FragCoord.xy );
+    outColor = color;
+}
+)";
+
+class ShaderToy {
 private:
-    char vert_file[64] = "shader.vert";
-    char frag_file[64] = "shader.frag";
+    char file[64] = "shader.glsl";
     GLuint vertex, fragment, program;
     GLuint vertBuf;
     GLuint vao;
 public:
-    App() : ImGui::App("shadertoy") {
+    ShaderToy() {
         program = glCreateProgram();
         vertex = glCreateShader(GL_VERTEX_SHADER);
         fragment = glCreateShader(GL_FRAGMENT_SHADER);
@@ -84,9 +118,10 @@ public:
         glBindVertexArray(vao);
         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void *)0);
         glEnableVertexAttribArray(0);
+        loadShaderProgram();
         glCheckError();
     }
-    ~App() {
+    ~ShaderToy() {
         glDeleteVertexArrays(1, &vao);
         glDeleteBuffers(1, &vertBuf);
         glDeleteShader(vertex);
@@ -94,32 +129,51 @@ public:
         glDeleteProgram(program);
     }
     void loadShaderProgram() {
-        auto vert_src = readFile(vert_file);
-        auto frag_src = readFile(frag_file);
-        if (!compileShader(vertex, vert_src.c_str()))
+        auto shadertoy_src = readFile(file);
+        if (!compileShader(vertex, vert_src))
             printf("shader log: %s\n", getShaderInfoLog(vertex).c_str());
-        if (!compileShader(fragment, frag_src.c_str()))
+        const char * srcs[] = {frag_hd, shadertoy_src.c_str()};
+        if (!compileShader(fragment, 2, srcs))
             printf("shader log: %s\n", getShaderInfoLog(fragment).c_str());
         bool isLinked = linkProgram(program, vertex, fragment);
         if (!isLinked) printf("program log: %s\n", getProgramInfoLog(program).c_str());
     }
-    virtual void update() override {
-        /* glClearColor(0.8, 0.8, 0.8, 1.0); */
-        /* glClear(GL_COLOR_BUFFER_BIT); */
-
+    void update() {
         ImGui::Begin("shader debug");
 
         {
-            ImGui::InputText("vertex file", vert_file, sizeof(vert_file));
-            ImGui::InputText("fragment file", frag_file, sizeof(frag_file));
+            ImGui::InputText("glsl file", file, sizeof(file));
             if (ImGui::Button("load program"))
                 loadShaderProgram();
         }
-        if (ImGui::Button("use program"))
-            glUseProgram(program);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
         ImGui::End();
-        //glCheckError();
+    }
+    void draw() {
+        glUseProgram(program);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        {
+            auto size = ImGui::GetIO().DisplaySize;
+            float res[3] = {size.x, size.y, 1};
+            int resLoc = glGetUniformLocation(program, "iResolution");
+            glUniform3fv(resLoc, 1, res);
+            int timeLoc = glGetUniformLocation(program, "iTime");
+            glUniform1f(timeLoc, ImGui::GetTime());
+        }
+        glCheckError();
+    }
+};
+
+class App : public ImGui::App {
+public:
+    App() : ImGui::App("shadertoy") {}
+private:
+    ShaderToy st;
+    virtual void update() override {
+        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        st.update();
+        glClearColor(0.8, 0.8, 0.8, 1.0);
+        glClear(GL_COLOR_BUFFER_BIT);
+        st.draw();
     }
 };
 
