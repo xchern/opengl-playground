@@ -113,9 +113,24 @@ public:
     }
 private:
     ShaderToy st;
+    bool p_control = false;
     virtual void update() override {
-        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-        st.update();
+        const float dist = 10.f;
+        ImVec2 window_pos = ImVec2(ImGui::GetIO().DisplaySize.x - dist, dist);
+        ImVec2 window_pos_pivot = ImVec2(1.0f, 0.0f);
+        ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
+        ImGui::SetNextWindowBgAlpha(0.3f); // Transparent background
+        if (ImGui::Begin("Overlay", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav)) {
+            ImGui::Text("%.1ffps", ImGui::GetIO().Framerate);
+            ImGui::SameLine();
+            ImGui::Checkbox("", &p_control);
+        }
+        ImGui::End();
+        if (p_control) {
+            ImGui::Begin("shader control", &p_control);
+            st.update();
+            ImGui::End();
+        }
         glClearColor(0.8, 0.8, 0.8, 1.0);
         glClear(GL_COLOR_BUFFER_BIT);
         st.draw();
