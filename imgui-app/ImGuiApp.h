@@ -34,7 +34,11 @@ public:
     int exec();
 protected:
     virtual void update() = 0;
+    bool isFullscreen(void);
+    void setFullScreen(bool fullscreen);
 private:
     GLFWwindow * window;
+    int windowPos[2];
+    int windowSize[2];
 };
 }

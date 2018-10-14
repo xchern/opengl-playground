@@ -100,6 +100,30 @@ App::~App() {
     glfwTerminate();
 }
 
+bool App::isFullscreen(void) {
+    return glfwGetWindowMonitor(window) != nullptr;
+} 
+
+void App::setFullScreen(bool fullscreen) {
+    if (isFullscreen() == fullscreen)
+        return;
+
+    if (fullscreen) {
+        // backup windwo position and window size
+        glfwGetWindowPos(window, &windowPos[0], &windowPos[1]);
+        glfwGetWindowSize(window, &windowSize[0], &windowSize[1]);
+
+        // get reolution of monitor
+        const GLFWvidmode * mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+
+        // swithc to full screen
+        glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(), 0, 0, mode->width, mode->height, 0);
+    } else {
+        // restore last window size and position
+        glfwSetWindowMonitor(window, nullptr, windowPos[0], windowPos[1], windowSize[0], windowSize[1], 0 );
+    }
+}
+
 int App::exec() {
     // Main loop
     while (!glfwWindowShouldClose(window))

@@ -114,6 +114,7 @@ public:
 private:
     ShaderToy st;
     bool p_control = false;
+    bool fullscreen = false;
     virtual void update() override {
         const float dist = 10.f;
         ImVec2 window_pos = ImVec2(ImGui::GetIO().DisplaySize.x - dist, dist);
@@ -121,9 +122,10 @@ private:
         ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
         ImGui::SetNextWindowBgAlpha(0.3f); // Transparent background
         if (ImGui::Begin("Overlay", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav)) {
-            ImGui::Text("%.1ffps", ImGui::GetIO().Framerate);
-            ImGui::SameLine();
-            ImGui::Checkbox("", &p_control);
+            ImGui::Text("framerate: %.1ffps", ImGui::GetIO().Framerate);
+            ImGui::Checkbox("show control window", &p_control);
+            if (ImGui::Checkbox("fullscreen", &fullscreen))
+                setFullScreen(fullscreen);
         }
         ImGui::End();
         if (p_control) {
