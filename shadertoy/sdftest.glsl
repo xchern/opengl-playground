@@ -19,7 +19,7 @@ float hash12(vec2 p)
 }
 
 
-#define AA 1   // make this 1 is your machine is too slow
+#define AA 4   // make this 1 is your machine is too slow
 
 //------------------------------------------------------------------
 
@@ -329,7 +329,7 @@ vec2 castRay( in vec3 ro, in vec3 rd )
 
     float t = tmin;
     float m = -1.0;
-    for( int i=0; i<64; i++ )
+    for( int i=0; i<256; i++ )
     {
 	    float precis = 0.0005*t;
 	    vec2 res = map( ro+rd*t );

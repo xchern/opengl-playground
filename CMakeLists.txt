@@ -39,6 +39,13 @@ target_link_libraries(imgui-demo
     imgui-app
     )
 
+add_executable(shadertoy
+    shadertoy.cc
+    )
+target_link_libraries(shadertoy
+    imgui-app
+    )
+
 add_executable(main
     main.cc
     )
