@@ -1,37 +1,125 @@
 #include "ImGuiApp.h"
+#include <string>
+
+bool compileShader(GLuint shader, int count, const char * srcs[]) {
+    glShaderSource(shader, count, srcs, NULL);
+    glCompileShader(shader);
+    GLint isCompiled;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &isCompiled);
+    return isCompiled;
+}
+
+bool compileShader(GLuint shader, const char * src) {
+    return compileShader(shader, 1, &src);
+}
+
+bool linkProgram(GLuint program, GLuint vert_shdr, GLuint frag_shdr) {
+    
+    glAttachShader(program, vert_shdr);
+    glAttachShader(program, frag_shdr);
+    glLinkProgram(program);
+    glDetachShader(program, vert_shdr);
+    glDetachShader(program, frag_shdr);
+    GLint isLinked = 0;
+    glGetProgramiv(program, GL_LINK_STATUS, &isLinked);
+    return isLinked;
+}
+
+std::string getShaderInfoLog(GLuint shader) {
+    GLint maxLength; // The maxLength includes the NULL character
+    glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &maxLength);
+    std::string errorLog(maxLength, '\0');
+    glGetShaderInfoLog(shader, maxLength, &maxLength, &errorLog[0]);
+    return &errorLog[0];
+}
+
+std::string getProgramInfoLog(GLuint program) {
+    GLint maxLength = 0;
+    glGetProgramiv(program, GL_INFO_LOG_LENGTH, &maxLength);
+    std::string infoLog(maxLength, '\0');
+    glGetProgramInfoLog(program, maxLength, &maxLength, &infoLog[0]);
+    return infoLog.c_str();
+}
+
+std::string readFile(const char * filename) {
+    FILE * fp = fopen(filename, "r");
+    if (!fp) return "";
+    // obtain file size:
+    fseek (fp , 0 , SEEK_END);
+    size_t size = ftell(fp);
+    rewind (fp);
+    // readfile
+    std::string content(size + 1, '\0');
+    size_t result = fread (&content[0], 1, size, fp);
+    if (result != size) {
+        fputs("error reading file", stderr);
+        return "";
+    }
+    fclose(fp);
+    return content.c_str();
+}
 
 class App : public ImGui::App {
-    bool show_demo_window = true;
-    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+private:
+    char vert_file[64] = "shader.vert";
+    char frag_file[64] = "shader.frag";
+    GLuint vertex, fragment, program;
+    GLuint vertBuf;
+    GLuint vao;
+public:
+    App() : ImGui::App("shadertoy") {
+        program = glCreateProgram();
+        vertex = glCreateShader(GL_VERTEX_SHADER);
+        fragment = glCreateShader(GL_FRAGMENT_SHADER);
+
+        glGenBuffers(1, &vertBuf);
+        glBindBuffer(GL_ARRAY_BUFFER, vertBuf);
+        static const float pos[] = {
+            -1,-1, 1,-1, -1, 1,
+             1,-1, 1, 1, -1, 1
+        };
+        glBufferData(GL_ARRAY_BUFFER, sizeof(pos), pos, GL_STATIC_DRAW);
+
+        glGenVertexArrays(1, &vao);
+        glBindVertexArray(vao);
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void *)0);
+        glEnableVertexAttribArray(0);
+        glCheckError();
+    }
+    ~App() {
+        glDeleteVertexArrays(1, &vao);
+        glDeleteBuffers(1, &vertBuf);
+        glDeleteShader(vertex);
+        glDeleteShader(fragment);
+        glDeleteProgram(program);
+    }
+    void loadShaderProgram() {
+        auto vert_src = readFile(vert_file);
+        auto frag_src = readFile(frag_file);
+        if (!compileShader(vertex, vert_src.c_str()))
+            printf("shader log: %s\n", getShaderInfoLog(vertex).c_str());
+        if (!compileShader(fragment, frag_src.c_str()))
+            printf("shader log: %s\n", getShaderInfoLog(fragment).c_str());
+        bool isLinked = linkProgram(program, vertex, fragment);
+        if (!isLinked) printf("program log: %s\n", getProgramInfoLog(program).c_str());
+    }
     virtual void update() override {
-        glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
-        glClear(GL_COLOR_BUFFER_BIT);
+        /* glClearColor(0.8, 0.8, 0.8, 1.0); */
+        /* glClear(GL_COLOR_BUFFER_BIT); */
 
-        // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-        if (show_demo_window)
-            ImGui::ShowDemoWindow(&show_demo_window);
+        ImGui::Begin("shader debug");
 
-        // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
         {
-            static float f = 0.0f;
-            static int counter = 0;
-
-            ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
-
-            ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-            ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-            ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-
-            if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-                counter++;
-            ImGui::SameLine();
-            ImGui::Text("counter = %d", counter);
-
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-            ImGui::End();
+            ImGui::InputText("vertex file", vert_file, sizeof(vert_file));
+            ImGui::InputText("fragment file", frag_file, sizeof(frag_file));
+            if (ImGui::Button("load program"))
+                loadShaderProgram();
         }
+        if (ImGui::Button("use program"))
+            glUseProgram(program);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        ImGui::End();
+        //glCheckError();
     }
 };
 

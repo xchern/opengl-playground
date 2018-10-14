@@ -16,31 +16,30 @@ static void glfw_error_callback(int error, const char* description) {
 
 namespace ImGui {
 
-App::App(int width, int height, const char * title) {
+App::App(const char * title, int width, int height) {
     if (title == NULL) title = "Dear ImGui Window";
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit()) exit(1);
 
     // Decide GL+GLSL versions
 #if __APPLE__
-    // GL 3.2 + GLSL 150
-    const char* glsl_version = "#version 150";
+    // GL 3.3 + GLSL 330
+    const char* glsl_version = "#version 330";
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // Required on Mac
 #else
-    // GL 3.0 + GLSL 130
-    const char* glsl_version = "#version 130";
+    // GL 3.3 + GLSL 330
+    const char* glsl_version = "#version 330";
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
     //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
 #endif
     // Create window with graphics context
     window = glfwCreateWindow(width, height, title, NULL, NULL);
-    if (window == NULL)
-        exit(1);
+    if (window == NULL) exit(1);
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1); // Enable vsync
 
@@ -69,8 +68,9 @@ App::App(int width, int height, const char * title) {
     ImGui_ImplOpenGL3_Init(glsl_version);
 
     // Setup style
-    //ImGui::StyleColorsDark();
-    ImGui::StyleColorsClassic();
+    //ImGui::StyleColorsLight();
+    ImGui::StyleColorsDark();
+    //ImGui::StyleColorsClassic();
 
     // Load Fonts
     // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.

@@ -32,6 +32,13 @@ target_link_libraries(imgui-app
     dl
     )
 
+add_executable(imgui-demo
+    imgui-app-demo.cc
+    )
+target_link_libraries(imgui-demo
+    imgui-app
+    )
+
 add_executable(main
     main.cc
     )

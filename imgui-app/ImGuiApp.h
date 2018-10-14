@@ -17,10 +17,19 @@
 #include IMGUI_IMPL_OPENGL_LOADER_CUSTOM
 #endif
 
+#define glCheckError()                                                      \
+    do {                                                                    \
+        GLenum err = glGetError();                                          \
+        if (err != GL_NO_ERROR)                                             \
+            fprintf(stderr,                                                 \
+                    "OpenGL error in file '%s' in line %i, Error Code 0x%x.\n", \
+                    __FILE__, __LINE__, err);                               \
+    } while (0)
+
 namespace ImGui {
 class App {
 public:
-    App(int width = 1080, int height = 720, const char * title=NULL);
+    App(const char * title=NULL, int width = 1080, int height = 720);
     ~App();
     int exec();
 protected:
