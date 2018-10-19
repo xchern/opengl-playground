@@ -17,7 +17,6 @@ private:
     GLuint vao;
 public:
     ParticleShaderProgram() {
-        ImGui::GetIO().Fonts->AddFontFromFileTTF("DejaVuSans.ttf", 18.0f);
         program = glCreateProgram();
         vertex = glCreateShader(GL_VERTEX_SHADER);
         fragment = glCreateShader(GL_FRAGMENT_SHADER);
@@ -96,6 +95,7 @@ public:
 class App : public ImGui::App {
 public:
     App(int argc, char ** argv) : ImGui::App("ParticleShaderProgram") {
+        ImGui::GetIO().Fonts->AddFontFromFileTTF("DejaVuSans.ttf", 18.0f);
         static const float v[4][4] = {
             {1,0,0,0},
             {0,1,0,0},

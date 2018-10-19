@@ -1,6 +1,5 @@
 add_subdirectory(imgui-app)
 include_directories(imgui-app)
-include_directories(imgui-app/imgui)
 
 add_executable(shadertoy
     shadertoy.cc
