@@ -1,5 +1,6 @@
 #include "ImGuiApp.h"
 #include "glshader_helper.h"
+#include <math.h>
 #include <string>
 #include <vector>
 
@@ -16,6 +17,7 @@ private:
     GLuint vao;
 public:
     ParticleShaderProgram() {
+        ImGui::GetIO().Fonts->AddFontFromFileTTF("DejaVuSans.ttf", 18.0f);
         program = glCreateProgram();
         vertex = glCreateShader(GL_VERTEX_SHADER);
         fragment = glCreateShader(GL_FRAGMENT_SHADER);
@@ -90,6 +92,7 @@ public:
     }
 };
 
+
 class App : public ImGui::App {
 public:
     App(int argc, char ** argv) : ImGui::App("ParticleShaderProgram") {
@@ -144,9 +147,16 @@ private:
         glClearColor(0.8, 0.8, 0.8, 1.0);
         glClear(GL_COLOR_BUFFER_BIT);
         program.draw();
+        ImDrawList * drawList = ImGui::GetOverlayDrawList();
+        drawList->PushClipRectFullScreen();
+        const float s = 1.2 + 0.2*cos(ImGui::GetTime()*0.3*2*M_PI);
+        drawList->AddCircleFilled(ImGui::GetMousePos(), 20 * sqrt(s), ImGui::ColorConvertFloat4ToU32(ImVec4(1.0,0.5,0.0,1*(1-exp(-1.5/s)))), 36);
+        drawList->AddText(ImVec2(10,10), 0xffffffff, "nice!");
+        drawList->PopClipRect();
     }
 };
 
 int main(int argc, char ** argv) {
     return App(argc, argv).exec();
 }
+
