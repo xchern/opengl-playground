@@ -17,8 +17,8 @@ add_library(imgui-app
     )
 target_link_libraries(imgui-app
     imgui
-    ${OPENGL_gl_LIBRARY}
     glfw
+    ${OPENGL_gl_LIBRARY}
     dl
     )
 

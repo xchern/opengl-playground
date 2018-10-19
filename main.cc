@@ -1,4 +1,5 @@
 #include "ImGuiApp.h"
+#include "camera.h"
 #include "glshader_helper.h"
 #include <math.h>
 #include <string>
@@ -93,18 +94,33 @@ public:
 
 
 class App : public ImGui::App {
+    Camera cam;
 public:
     App(int argc, char ** argv) : ImGui::App("ParticleShaderProgram") {
-        ImGui::GetIO().Fonts->AddFontFromFileTTF("DejaVuSans.ttf", 18.0f);
-        static const float v[4][4] = {
-            {1,0,0,0},
-            {0,1,0,0},
-            {0,0,1,0},
-            {0,0,0,1},
-        };
-        program.setMVP(false, (const float *)&v);
+        ImGui::GetIO().Fonts->AddFontFromFileTTF("DejaVuSans.ttf", 24.0f);
+        loadMatrix();
+        loadRandomData();
     }
 private:
+    void loadMatrix() {
+        auto displaySize = ImGui::GetIO().DisplaySize;
+        auto mat = cam.getMat(displaySize.x/displaySize.y);
+        program.setMVP(false, (const float *)&mat);
+    }
+    void loadRandomData() {
+        const size_t N = 1000;
+        std::vector<float> pos;
+        std::vector<float> col;
+        for (int i = 0; i < N; i++) {
+            pos.push_back(2 * randFloat() - 1);
+            pos.push_back(2 * randFloat() - 1);
+            pos.push_back(2 * randFloat() - 1);
+            col.push_back(randFloat());
+            col.push_back(randFloat());
+            col.push_back(randFloat());
+        }
+        program.setData(N, pos.data(), col.data());
+    }
     ParticleShaderProgram program;
     bool p_control = true;
     bool fullscreen = false;
@@ -125,34 +141,26 @@ private:
         if (p_control) {
             ImGui::Begin("control", &p_control);
             if (ImGui::Button("load random data")) {
-                const size_t N = 1000;
-                std::vector<float> pos;
-                std::vector<float> col;
-                for (int i = 0; i < N; i++) {
-                    pos.push_back(2 * randFloat() - 1);
-                    pos.push_back(2 * randFloat() - 1);
-                    pos.push_back(2 * randFloat() - 1);
-                    col.push_back(randFloat());
-                    col.push_back(randFloat());
-                    col.push_back(randFloat());
-                }
-                program.setData(N, pos.data(), col.data());
+                loadRandomData();
             }
             ImGui::InputText("csv file", csvFile, sizeof(csvFile));
             if (ImGui::Button("load file")) {
                 //TODO
             }
+            cam.ImGuiEdit();
+            cam.ImGuiDrag();
+            loadMatrix();
             ImGui::End();
         }
         glClearColor(0.8, 0.8, 0.8, 1.0);
         glClear(GL_COLOR_BUFFER_BIT);
         program.draw();
-        ImDrawList * drawList = ImGui::GetOverlayDrawList();
-        drawList->PushClipRectFullScreen();
-        const float s = 1.2 + 0.2*cos(ImGui::GetTime()*0.3*2*M_PI);
-        drawList->AddCircleFilled(ImGui::GetMousePos(), 20 * sqrt(s), ImGui::ColorConvertFloat4ToU32(ImVec4(1.0,0.5,0.0,1*(1-exp(-1.5/s)))), 36);
-        drawList->AddText(ImVec2(10,10), 0xffffffff, "nice!");
-        drawList->PopClipRect();
+        /* ImDrawList * drawList = ImGui::GetOverlayDrawList(); */
+        /* drawList->PushClipRectFullScreen(); */
+        /* const float s = 1.2 + 0.2*cos(ImGui::GetTime()*0.3*2*M_PI); */
+        /* drawList->AddCircleFilled(ImGui::GetMousePos(), 20 * sqrt(s), ImGui::ColorConvertFloat4ToU32(ImVec4(1.0,0.5,0.0,1*(1-exp(-1.5/s)))), 36); */
+        /* drawList->AddText(ImVec2(10,10), 0xffffffff, "nice!"); */
+        /* drawList->PopClipRect(); */
     }
 };
 
