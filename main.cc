@@ -4,6 +4,7 @@
 #include <math.h>
 #include <string>
 #include <vector>
+#include "joystick.h"
 
 float randFloat() {
     return (float) rand() / RAND_MAX;
@@ -95,6 +96,7 @@ public:
 
 class App : public ImGui::App {
     Camera cam;
+    JoyStick js;
 public:
     App(int argc, char ** argv) : ImGui::App("ParticleShaderProgram") {
         ImGui::GetIO().Fonts->AddFontFromFileTTF("DejaVuSans.ttf", 24.0f);
@@ -126,6 +128,16 @@ private:
     bool fullscreen = false;
     char csvFile[64];
     virtual void update() override {
+        js.fetchState();
+        js.ImGuiShow();
+        const glm::vec2 axes_l = glm::vec2(
+                js.getAxis(JoyStick::AXIS_LEFT_X),
+                -js.getAxis(JoyStick::AXIS_LEFT_Y))*ImGui::GetIO().DeltaTime;
+        const glm::vec2 axes_r = glm::vec2(
+                js.getAxis(JoyStick::AXIS_RIGHT_X),
+                -js.getAxis(JoyStick::AXIS_RIGHT_Y))*ImGui::GetIO().DeltaTime;
+        cam.translate(axes_l);
+        cam.rotate(axes_r);
         const float dist = 10.f;
         ImVec2 window_pos = ImVec2(ImGui::GetIO().DisplaySize.x - dist, dist);
         ImVec2 window_pos_pivot = ImVec2(1.0f, 0.0f);
@@ -144,16 +156,16 @@ private:
                 loadRandomData();
             }
             ImGui::InputText("csv file", csvFile, sizeof(csvFile));
-            if (ImGui::Button("load file")) {
-                //TODO
-            }
-            cam.ImGuiEdit();
+            //TODO
+            /* if (ImGui::Button("load file")) { */
+            /* } */
             cam.ImGuiDrag();
-            loadMatrix();
+            cam.ImGuiEdit();
             ImGui::End();
         }
         glClearColor(0.8, 0.8, 0.8, 1.0);
         glClear(GL_COLOR_BUFFER_BIT);
+        loadMatrix();
         program.draw();
         /* ImDrawList * drawList = ImGui::GetOverlayDrawList(); */
         /* drawList->PushClipRectFullScreen(); */

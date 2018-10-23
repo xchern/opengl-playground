@@ -17,26 +17,26 @@ struct Camera {
         return glm::perspective(getFovy(), ratio, 5e-2f * dist, 1e3f * dist)
             * glm::lookAt(eye, centor, up);
     }
-    void mouseRotate(glm::vec2 delta) {
+    void rotate(glm::vec2 delta) {
         delta *= getFovy();
         glm::vec3 dr = eye - centor;
         glm::vec3 right = cross(normalize(up), normalize(dr));
         const double c = dot(normalize(up), normalize(dr));
         const double s = sqrt(1 - c * c);
-        dr = rotate(dr, -delta.x, up);
+        dr = glm::rotate(dr, -delta.x, up);
         if (c < 0 && delta.y > s) delta.y = s - 1e-2;
         if (c >= 0 && delta.y < -s) delta.y = -s + 1e-2;
-        dr = rotate(dr, delta.y, right);
+        dr = glm::rotate(dr, delta.y, right);
         eye = centor + dr;
     }
-    void mouseTranslate(glm::vec2 delta) {
+    void translate(glm::vec2 delta) {
         glm::vec3 dr = centor - eye;
         glm::vec3 right = normalize(cross(dr, up));
         glm::vec3 up = normalize(cross(right, dr));
-        eye -= (delta.x * right + delta.y * up) * target_size;
-        centor -= (delta.x * right + delta.y * up) * target_size;
+        eye += (delta.x * right + delta.y * up) * target_size;
+        centor += (delta.x * right + delta.y * up) * target_size;
     }
-    void mouseScale(glm::vec2 delta) {
+    void scale(glm::vec2 delta) {
         delta *= 2;
         target_size *= 1 + delta.y;
         glm::vec3 dr = eye - centor;
@@ -57,17 +57,17 @@ struct Camera {
         ImGui::SameLine();
         ImGui::Button("Rotate");
         if (ImGui::IsItemActive()&&ImGui::IsMouseDragging()) {
-            mouseRotate(delta);
+            rotate(delta);
         }
         ImGui::SameLine();
         ImGui::Button("Translate");
         if (ImGui::IsItemActive()&&ImGui::IsMouseDragging()) {
-            mouseTranslate(delta);
+            translate(-delta);
         }
         ImGui::SameLine();
         ImGui::Button("Scale");
         if (ImGui::IsItemActive()&&ImGui::IsMouseDragging()) {
-            mouseScale(delta);
+            scale(delta);
         }
     }
 };
