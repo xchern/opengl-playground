@@ -18,7 +18,7 @@ struct Camera {
             * glm::lookAt(eye, centor, up);
     }
     void rotate(glm::vec2 delta) {
-        delta *= getFovy();
+        delta *= M_PI/2;
         glm::vec3 dr = eye - centor;
         glm::vec3 right = cross(normalize(up), normalize(dr));
         const double c = dot(normalize(up), normalize(dr));
@@ -36,7 +36,7 @@ struct Camera {
         eye += (delta.x * right + delta.y * up) * target_size;
         centor += (delta.x * right + delta.y * up) * target_size;
     }
-    void scale(glm::vec2 delta) {
+    void zoom(glm::vec2 delta) {
         delta *= 2;
         target_size *= 1 + delta.y;
         glm::vec3 dr = eye - centor;
@@ -65,9 +65,9 @@ struct Camera {
             translate(-delta);
         }
         ImGui::SameLine();
-        ImGui::Button("Scale");
+        ImGui::Button("Zoom");
         if (ImGui::IsItemActive()&&ImGui::IsMouseDragging()) {
-            scale(delta);
+            zoom(delta);
         }
     }
 };

@@ -87,7 +87,7 @@ public:
         if (!isLinked) printf("program log: %s\n", getProgramInfoLog(program).c_str());
     }
     void draw() {
-        glPointSize(8);
+        glPointSize(16);
         glUseProgram(program);
         glDrawArrays(GL_POINTS, 0, particleNumber);
     }
@@ -98,7 +98,7 @@ class App : public ImGui::App {
     Camera cam;
     JoyStick js;
 public:
-    App(int argc, char ** argv) : ImGui::App("ParticleShaderProgram") {
+    App(int argc, char ** argv) : ImGui::App("ParticleShaderProgram", 1280, 960) {
         ImGui::GetIO().Fonts->AddFontFromFileTTF("DejaVuSans.ttf", 24.0f);
         loadMatrix();
         loadRandomData();
@@ -128,16 +128,17 @@ private:
     bool fullscreen = false;
     char csvFile[64];
     virtual void update() override {
-        js.fetchState();
-        js.ImGuiShow();
-        const glm::vec2 axes_l = glm::vec2(
-                js.getAxis(JoyStick::AXIS_LEFT_X),
-                -js.getAxis(JoyStick::AXIS_LEFT_Y))*ImGui::GetIO().DeltaTime;
-        const glm::vec2 axes_r = glm::vec2(
-                js.getAxis(JoyStick::AXIS_RIGHT_X),
-                -js.getAxis(JoyStick::AXIS_RIGHT_Y))*ImGui::GetIO().DeltaTime;
-        cam.translate(axes_l);
-        cam.rotate(axes_r);
+        if (js.fetchState()) {
+            js.ImGuiShow();
+            const glm::vec2 axes_l = glm::vec2(
+                    js.getAxis(JoyStick::AXIS_LEFT_X),
+                    -js.getAxis(JoyStick::AXIS_LEFT_Y))*ImGui::GetIO().DeltaTime * 2.f;
+            const glm::vec2 axes_r = glm::vec2(
+                    js.getAxis(JoyStick::AXIS_RIGHT_X),
+                    -js.getAxis(JoyStick::AXIS_RIGHT_Y))*ImGui::GetIO().DeltaTime * 2.f;
+            cam.translate(axes_l);
+            cam.rotate(axes_r);
+        }
         const float dist = 10.f;
         ImVec2 window_pos = ImVec2(ImGui::GetIO().DisplaySize.x - dist, dist);
         ImVec2 window_pos_pivot = ImVec2(1.0f, 0.0f);
@@ -155,8 +156,8 @@ private:
             if (ImGui::Button("load random data")) {
                 loadRandomData();
             }
-            ImGui::InputText("csv file", csvFile, sizeof(csvFile));
             //TODO
+            /* ImGui::InputText("csv file", csvFile, sizeof(csvFile)); */
             /* if (ImGui::Button("load file")) { */
             /* } */
             cam.ImGuiDrag();

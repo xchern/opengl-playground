@@ -94,7 +94,6 @@ public:
     }
     void draw() {
         glUseProgram(program);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
         {
             auto size = ImGui::GetIO().DisplaySize;
             float res[3] = {size.x, size.y, 1};
@@ -103,6 +102,7 @@ public:
             int timeLoc = glGetUniformLocation(program, "iTime");
             glUniform1f(timeLoc, ImGui::GetTime());
         }
+        glDrawArrays(GL_TRIANGLES, 0, 6);
     }
 };
 
