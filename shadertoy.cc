@@ -95,12 +95,19 @@ public:
     void draw() {
         glUseProgram(program);
         {
-            auto size = ImGui::GetIO().DisplaySize;
-            float res[3] = {size.x, size.y, 1};
-            int resLoc = glGetUniformLocation(program, "iResolution");
+            const auto & io = ImGui::GetIO();
+            const auto size = io.DisplaySize;
+            const float res[3] = {size.x, size.y, 1};
+            const int resLoc = glGetUniformLocation(program, "iResolution");
             glUniform3fv(resLoc, 1, res);
-            int timeLoc = glGetUniformLocation(program, "iTime");
+            const int timeLoc = glGetUniformLocation(program, "iTime");
             glUniform1f(timeLoc, ImGui::GetTime());
+            const int mouseLoc = glGetUniformLocation(program, "iMouse");
+            const auto p = io.MouseClickedPos[0];
+            const float clicked = ImGui::IsMouseDown(0) ? 1 : -1;
+            glUniform4f(mouseLoc,
+                    io.MousePos.x, size.y - io.MousePos.y,
+                    clicked * p.x, clicked * (size.y - p.y));
         }
         glDrawArrays(GL_TRIANGLES, 0, 6);
     }
