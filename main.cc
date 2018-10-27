@@ -55,11 +55,11 @@ private:
             js.ImGuiShow();
             const glm::vec2 axes_l = glm::vec2(
                     js.getAxis(JoyStick::AXIS_LEFT_X),
-                    -js.getAxis(JoyStick::AXIS_LEFT_Y))*ImGui::GetIO().DeltaTime * 2.f;
+                    -js.getAxis(JoyStick::AXIS_LEFT_Y))*ImGui::GetIO().DeltaTime;
             const glm::vec2 axes_r = glm::vec2(
                     js.getAxis(JoyStick::AXIS_RIGHT_X),
-                    -js.getAxis(JoyStick::AXIS_RIGHT_Y))*ImGui::GetIO().DeltaTime * 2.f;
-            cam.translate(axes_l);
+                    -js.getAxis(JoyStick::AXIS_RIGHT_Y))*ImGui::GetIO().DeltaTime;
+            cam.walk(axes_l);
             cam.rotate(axes_r);
         }
         const float dist = 10.f;

@@ -31,7 +31,7 @@ public:
     };
     float getAxis(enum Axis code) {
         const float a = axes[code];
-        return a > 0.025f || a < -0.025f ? a : 0;
+        return a > 0.05f || a < -0.05f ? a : 0;
     }
     bool fetchState() {
         if(glfwJoystickPresent(GLFW_JOYSTICK_1)) {

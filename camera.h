@@ -39,6 +39,13 @@ struct Camera {
         eye += (delta.x * right + delta.y * up) * target_size;
         centor += (delta.x * right + delta.y * up) * target_size;
     }
+    void walk(glm::vec2 delta) {
+        glm::vec3 dr = centor - eye;
+        glm::vec3 right = normalize(cross(dr, up));
+        glm::vec3 front = normalize(cross(up, right));
+        eye += (delta.x * right + delta.y * front) * target_size;
+        centor += (delta.x * right + delta.y * front) * target_size;
+    }
     void zoom(glm::vec2 delta) {
         delta *= 2;
         // x zoom fovy
