@@ -10,10 +10,13 @@ struct Camera {
     float target_size;
     Camera() : eye(0,3,0), centor(0,0,0), up(0,0,1), target_size(1) {}
     float getFovy() const {
-        return 2 * atan(target_size/length(eye-centor));
+        return 2 * atan(target_size/getDist());
+    }
+    float getDist() const {
+        return length(eye-centor);
     }
     glm::mat4 getMat(float ratio) const {
-        const float dist = length(eye-centor);
+        const float dist = getDist();
         return glm::perspective(getFovy(), ratio, 5e-2f * dist, 1e3f * dist)
             * glm::lookAt(eye, centor, up);
     }
@@ -38,9 +41,12 @@ struct Camera {
     }
     void zoom(glm::vec2 delta) {
         delta *= 2;
-        target_size *= 1 + delta.y;
+        // x zoom fovy
+        target_size *= 1 - delta.x;
+        // y zoom distance
+        target_size *= 1 - delta.y;
         glm::vec3 dr = eye - centor;
-        dr *= 1 + delta.x;
+        dr *= 1 - delta.y;
         eye = centor + dr;
     }
     void ImGuiEdit() {

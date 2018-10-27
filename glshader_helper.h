@@ -16,7 +16,6 @@ inline bool compileShader(GLuint shader, const char * src) {
 }
 
 inline bool linkProgram(GLuint program, GLuint vert_shdr, GLuint frag_shdr) {
-    
     glAttachShader(program, vert_shdr);
     glAttachShader(program, frag_shdr);
     glLinkProgram(program);

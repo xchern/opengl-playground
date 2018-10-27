@@ -5,128 +5,51 @@
 #include <string>
 #include <vector>
 #include "joystick.h"
+#include "Particles.h"
 
-float randFloat() {
+inline float randFloat() {
     return (float) rand() / RAND_MAX;
 }
 
-class ParticleShaderProgram {
-private:
-    GLuint vertex, fragment, program;
-    size_t particleNumber = 0;
-    GLuint vertBufPos;
-    GLuint vertBufCol;
-    GLuint vao;
-public:
-    ParticleShaderProgram() {
-        program = glCreateProgram();
-        vertex = glCreateShader(GL_VERTEX_SHADER);
-        fragment = glCreateShader(GL_FRAGMENT_SHADER);
-        glGenBuffers(1, &vertBufPos);
-        glGenBuffers(1, &vertBufCol);
-        glGenVertexArrays(1, &vao);
-        setupVAO();
-        compile(R"(
-            #version 330
-            uniform mat4 MVP;
-            layout (location = 0) in vec3 vPos;
-            layout (location = 1) in vec3 vCol;
-            out vec3 fCol;
-            void main() {
-                fCol = vCol;
-                gl_Position = MVP * vec4(vPos, 1.0);
-            }
-            )", R"(
-            #version 330
-            in vec3 fCol;
-            void main() {
-                vec2 pc = gl_PointCoord * 2.0 - 1.0;
-                if (dot(pc, pc) > 1) discard;
-                gl_FragColor = vec4(fCol, 1.0);
-            }
-            )");
-        glCheckError();
-    }
-    void setupVAO() {
-        glBindVertexArray(vao);
-        glBindBuffer(GL_ARRAY_BUFFER, vertBufPos);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
-        glEnableVertexAttribArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, vertBufCol);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
-        glEnableVertexAttribArray(1);
-    }
-    ~ParticleShaderProgram() {
-        glDeleteVertexArrays(1, &vao);
-        glDeleteBuffers(1, &vertBufPos);
-        glDeleteBuffers(1, &vertBufCol);
-        glDeleteShader(vertex);
-        glDeleteShader(fragment);
-        glDeleteProgram(program);
-    }
-    void setData(size_t N, const void * pos, const void * col) {
-        glBindBuffer(GL_ARRAY_BUFFER, vertBufPos);
-        glBufferData(GL_ARRAY_BUFFER, N * 3 * sizeof(float), pos, GL_STREAM_DRAW);
-        glBindBuffer(GL_ARRAY_BUFFER, vertBufCol);
-        glBufferData(GL_ARRAY_BUFFER, N * 3 * sizeof(float), col, GL_STREAM_DRAW);
-        particleNumber = N;
-        glCheckError();
-    }
-    void setMVP(bool transpose, const float * value) {
-        int MVPLoc = glGetUniformLocation(program, "MVP");
-        glUseProgram(program);
-        glUniformMatrix4fv(MVPLoc, 1, transpose, value);
-        glCheckError();
-    }
-    void compile(const char * vert_src, const char * frag_src) {
-        if (!compileShader(vertex, vert_src))
-            printf("shader log: %s\n", getShaderInfoLog(vertex).c_str());
-        if (!compileShader(fragment, frag_src))
-            printf("shader log: %s\n", getShaderInfoLog(fragment).c_str());
-        bool isLinked = linkProgram(program, vertex, fragment);
-        if (!isLinked) printf("program log: %s\n", getProgramInfoLog(program).c_str());
-    }
-    void draw() {
-        glPointSize(16);
-        glUseProgram(program);
-        glDrawArrays(GL_POINTS, 0, particleNumber);
-    }
-};
-
-
 class App : public ImGui::App {
-    Camera cam;
-    JoyStick js;
 public:
     App(int argc, char ** argv) : ImGui::App("ParticleShaderProgram", 1280, 960) {
         ImGui::GetIO().Fonts->AddFontFromFileTTF("DejaVuSans.ttf", 24.0f);
-        loadMatrix();
+        loadUniform();
         loadRandomData();
     }
 private:
-    void loadMatrix() {
+    ParticleShaderProgram program;
+    Camera cam;
+    JoyStick js;
+    bool p_control = true;
+    bool fullscreen = false;
+    char csvFile[64];
+    void loadUniform() {
         auto displaySize = ImGui::GetIO().DisplaySize;
         auto mat = cam.getMat(displaySize.x/displaySize.y);
         program.setMVP(false, (const float *)&mat);
+        program.setUnitSize(displaySize.y * cam.getDist() / cam.target_size);
     }
     void loadRandomData() {
-        const size_t N = 1000;
+        const size_t N = 8e3;
         std::vector<float> pos;
         std::vector<float> col;
+        std::vector<float> radius;
         for (int i = 0; i < N; i++) {
             pos.push_back(2 * randFloat() - 1);
             pos.push_back(2 * randFloat() - 1);
             pos.push_back(2 * randFloat() - 1);
-            col.push_back(randFloat());
-            col.push_back(randFloat());
-            col.push_back(randFloat());
+            glm::vec3 c = glm::vec3(randFloat(), randFloat(), randFloat());
+            c /= glm::max(glm::max(c.r, c.g), c.b);
+            c = (c + glm::vec3(1)) / 2.f * 0.7f;
+            col.push_back(c.r);
+            col.push_back(c.g);
+            col.push_back(c.b);
+            radius.push_back(0.1 + 0.1 * sqrt(randFloat()));
         }
-        program.setData(N, pos.data(), col.data());
+        program.setData(N, pos.data(), col.data(), radius.data());
     }
-    ParticleShaderProgram program;
-    bool p_control = true;
-    bool fullscreen = false;
-    char csvFile[64];
     virtual void update() override {
         if (js.fetchState()) {
             js.ImGuiShow();
@@ -165,8 +88,8 @@ private:
             ImGui::End();
         }
         glClearColor(0.8, 0.8, 0.8, 1.0);
-        glClear(GL_COLOR_BUFFER_BIT);
-        loadMatrix();
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        loadUniform();
         program.draw();
         /* ImDrawList * drawList = ImGui::GetOverlayDrawList(); */
         /* drawList->PushClipRectFullScreen(); */
