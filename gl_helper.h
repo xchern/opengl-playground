@@ -2,6 +2,8 @@
 
 #include <string>
 #include <stdio.h>
+#include <assert.h>
+#include <ImGuiApp.h>
 
 inline std::string readFile(const char * filename) {
     FILE * fp = fopen(filename, "r");

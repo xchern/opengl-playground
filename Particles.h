@@ -1,7 +1,6 @@
 #pragma once
 #include "gl_helper.h"
 
-
 class ParticleShaderProgram {
 private:
     GLuint program;
@@ -26,8 +25,8 @@ public:
                 float sizeFactor = 1.0 / (1.0 + 5.0 * vRadius/gl_Position.w);
                 gl_PointSize = unitSize * vRadius * sizeFactor / gl_Position.w;
                 fDist = gl_Position.w;
-                fDepthA = -length(vec3(MVP[0][2], MVP[1][2], MVP[2][2]));
-                fDepthB = MVP[3][2] - MVP[3][3];
+                fDepthA = -length(vec3(MVP[0][2], MVP[1][2], MVP[2][2])) / length(vec3(MVP[0][3], MVP[1][3], MVP[2][3]));
+                fDepthB = MVP[3][2] + MVP[3][3] * fDepthA;
                 fBallRadius = vRadius * sizeFactor;
                 fCol = vCol;
             }
@@ -80,6 +79,7 @@ public:
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_PROGRAM_POINT_SIZE);
         glUseProgram(program);
+        glBindVertexArray(ba.vao);
         glDrawArrays(GL_POINTS, 0, particleNumber);
         glCheckError();
     }

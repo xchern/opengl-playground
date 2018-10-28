@@ -3,6 +3,7 @@
 #include "gl_helper.h"
 #include "joystick.h"
 #include "Particles.h"
+#include "Lines.h"
 
 #include <math.h>
 #include <vector>
@@ -14,11 +15,19 @@ inline float randFloat() {
 class App : public ImGui::App {
 public:
     App(int argc, char ** argv) : ImGui::App("ParticleShaderProgram", 1280, 960) {
+        //glfwSwapInterval(0);
         loadUniform();
-        loadRandomData();
+        loadParticles();
+        loadLines();
+    }
+    void loadLines() {
+        LinesBuffer lb;
+        lb.addAABB({-1,-1,-1}, {1,1,1}, {4,4,4});
+        lsp.setData(lb.vertexNumber(), lb.posPtr(), lb.colPtr());
     }
 private:
-    ParticleShaderProgram program;
+    ParticleShaderProgram psp;
+    LinesShaderProgram lsp;
     Camera cam;
     JoyStick js;
     bool p_control = true;
@@ -26,11 +35,12 @@ private:
     void loadUniform() {
         auto displaySize = ImGui::GetIO().DisplaySize;
         auto mat = cam.getMat(displaySize.x/displaySize.y);
-        program.setMVP(false, (const float *)&mat);
-        program.setUnitSize(displaySize.y * cam.getDist() / cam.target_size);
+        lsp.setMVP(false, (const float *)&mat);
+        psp.setMVP(false, (const float *)&mat);
+        psp.setUnitSize(displaySize.y * cam.getDist() / cam.target_size);
     }
-    void loadRandomData() {
-        const size_t N = 1e3;
+    void loadParticles() {
+        const size_t N = 1e2;
         std::vector<float> pos;
         std::vector<float> col;
         std::vector<float> radius;
@@ -46,7 +56,7 @@ private:
             col.push_back(c.b);
             radius.push_back(0.1 + 0.2 * sqrt(randFloat()));
         }
-        program.setData(N, pos.data(), col.data(), radius.data());
+        psp.setData(N, pos.data(), col.data(), radius.data());
     }
     virtual void update() override {
         // joystick
@@ -76,13 +86,9 @@ private:
         // control window
         if (p_control) {
             ImGui::Begin("control", &p_control);
-            if (ImGui::Button("load random data")) {
-                loadRandomData();
+            if (ImGui::Button("load random particle data")) {
+                loadParticles();
             }
-            //TODO
-            /* ImGui::InputText("csv file", csvFile, sizeof(csvFile)); */
-            /* if (ImGui::Button("load file")) { */
-            /* } */
             cam.ImGuiDrag();
             cam.ImGuiEdit();
             ImGui::End();
@@ -91,7 +97,9 @@ private:
         glClearColor(0.8, 0.8, 0.8, 1.0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         loadUniform();
-        program.draw();
+        psp.draw();
+        glLineWidth(8);
+        lsp.draw();
     }
 };
 

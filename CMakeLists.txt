@@ -9,10 +9,10 @@ target_link_libraries(shadertoy
     imgui-app
     )
 
-add_executable(particles
-    particles-demo.cc
+add_executable(primitives
+    primitives-demo.cc
     )
-target_link_libraries(particles
+target_link_libraries(primitives
     imgui-app
     )
 
