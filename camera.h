@@ -8,7 +8,7 @@
 struct Camera {
     glm::vec3 eye, centor, up;
     float target_size;
-    Camera() : eye(0,3,0), centor(0,0,0), up(0,0,1), target_size(1) {}
+    Camera() : eye(1,2,2), centor(0,0,0), up(0,0,1), target_size(2) {}
     float getFovy() const {
         return 2 * atan(target_size/getDist());
     }

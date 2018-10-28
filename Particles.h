@@ -1,25 +1,15 @@
 #pragma once
-#include "glshader_helper.h"
+#include "gl_helper.h"
+
 
 class ParticleShaderProgram {
 private:
-    GLuint vertex, fragment, program;
+    GLuint program;
     size_t particleNumber = 0;
-    GLuint vertBufPos;
-    GLuint vertBufCol;
-    GLuint vertBufRadius;
-    GLuint vao;
+    BufferArray ba;
 public:
-    ParticleShaderProgram() {
-        program = glCreateProgram();
-        vertex = glCreateShader(GL_VERTEX_SHADER);
-        fragment = glCreateShader(GL_FRAGMENT_SHADER);
-        glGenBuffers(1, &vertBufPos);
-        glGenBuffers(1, &vertBufCol);
-        glGenBuffers(1, &vertBufRadius);
-        glGenVertexArrays(1, &vao);
-        setupVAO();
-        compile(R"(
+    ParticleShaderProgram() : ba(3) {
+        static const char vertSrc[] = R"(
             #version 330
             uniform mat4 MVP;
             uniform float unitSize;
@@ -41,7 +31,8 @@ public:
                 fBallRadius = vRadius * sizeFactor;
                 fCol = vCol;
             }
-            )", R"(
+            )";
+        static const char fragSrc[] = R"(
             #version 330
             in float fDepthA;
             in float fDepthB;
@@ -56,26 +47,20 @@ public:
                 gl_FragDepth = -fDepthA + fDepthB / dist;
                 gl_FragColor = vec4(fCol, 1.0);
             }
-            )");
+            )";
+        program = ProgramLoader::fromSource(vertSrc, fragSrc);
+        int dim[] = {3,3,1};
+        ba.setupVAO(dim);
         setUnitSize(1000);
         glCheckError();
     }
     ~ParticleShaderProgram() {
-        glDeleteVertexArrays(1, &vao);
-        glDeleteBuffers(1, &vertBufPos);
-        glDeleteBuffers(1, &vertBufCol);
-        glDeleteBuffers(1, &vertBufRadius);
-        glDeleteShader(vertex);
-        glDeleteShader(fragment);
         glDeleteProgram(program);
     }
     void setData(size_t N, const float * pos, const float * col, const float * radius) {
-        glBindBuffer(GL_ARRAY_BUFFER, vertBufPos);
-        glBufferData(GL_ARRAY_BUFFER, N * 3 * sizeof(float), pos, GL_STREAM_DRAW);
-        glBindBuffer(GL_ARRAY_BUFFER, vertBufCol);
-        glBufferData(GL_ARRAY_BUFFER, N * 3 * sizeof(float), col, GL_STREAM_DRAW);
-        glBindBuffer(GL_ARRAY_BUFFER, vertBufRadius);
-        glBufferData(GL_ARRAY_BUFFER, N * sizeof(float), radius, GL_STREAM_DRAW);
+        ba.setData(0, N * 3 * sizeof(float), pos);
+        ba.setData(1, N * 3 * sizeof(float), col);
+        ba.setData(2, N * sizeof(float), radius);
         particleNumber = N;
         glCheckError();
     }
@@ -92,31 +77,10 @@ public:
         glCheckError();
     }
     void draw() {
-        glPointSize(16);
-        glEnable(GL_PROGRAM_POINT_SIZE);
         glEnable(GL_DEPTH_TEST);
+        glEnable(GL_PROGRAM_POINT_SIZE);
         glUseProgram(program);
         glDrawArrays(GL_POINTS, 0, particleNumber);
-    }
-private:
-    void setupVAO() {
-        glBindVertexArray(vao);
-        glBindBuffer(GL_ARRAY_BUFFER, vertBufPos);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
-        glEnableVertexAttribArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, vertBufCol);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
-        glBindBuffer(GL_ARRAY_BUFFER, vertBufRadius);
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, sizeof(float), (void *)0);
-        glEnableVertexAttribArray(2);
-    }
-    void compile(const char * vert_src, const char * frag_src) {
-        if (!compileShader(vertex, vert_src))
-            printf("vertex shader log: %s\n", getShaderInfoLog(vertex).c_str());
-        if (!compileShader(fragment, frag_src))
-            printf("fragment shader log: %s\n", getShaderInfoLog(fragment).c_str());
-        if (!linkProgram(program, vertex, fragment))
-            printf("program log: %s\n", getProgramInfoLog(program).c_str());
+        glCheckError();
     }
 };

@@ -1,58 +1,29 @@
 #include "ImGuiApp.h"
 #include "camera.h"
-#include "glshader_helper.h"
+#include "gl_helper.h"
 #include <math.h>
 #include <string>
 #include <vector>
 #include "joystick.h"
 #include "Particles.h"
 
-inline float randFloat() {
-    return (float) rand() / RAND_MAX;
-}
-
 class App : public ImGui::App {
 public:
-    App(int argc, char ** argv) : ImGui::App("ParticleShaderProgram", 1280, 960) {
+    App(int argc, char ** argv) : ImGui::App("ImGuiApp", 1280, 960) {
         ImGui::GetIO().Fonts->AddFontFromFileTTF("DejaVuSans.ttf", 24.0f);
-        loadUniform();
-        loadRandomData();
     }
 private:
-    ParticleShaderProgram program;
     Camera cam;
     JoyStick js;
     bool p_control = true;
     bool fullscreen = false;
-    char csvFile[64];
-    void loadUniform() {
-        auto displaySize = ImGui::GetIO().DisplaySize;
-        auto mat = cam.getMat(displaySize.x/displaySize.y);
-        program.setMVP(false, (const float *)&mat);
-        program.setUnitSize(displaySize.y * cam.getDist() / cam.target_size);
-    }
-    void loadRandomData() {
-        const size_t N = 8e3;
-        std::vector<float> pos;
-        std::vector<float> col;
-        std::vector<float> radius;
-        for (int i = 0; i < N; i++) {
-            pos.push_back(2 * randFloat() - 1);
-            pos.push_back(2 * randFloat() - 1);
-            pos.push_back(2 * randFloat() - 1);
-            glm::vec3 c = glm::vec3(randFloat(), randFloat(), randFloat());
-            c /= glm::max(glm::max(c.r, c.g), c.b);
-            c = (c + glm::vec3(1)) / 2.f * 0.7f;
-            col.push_back(c.r);
-            col.push_back(c.g);
-            col.push_back(c.b);
-            radius.push_back(0.1 + 0.1 * sqrt(randFloat()));
-        }
-        program.setData(N, pos.data(), col.data(), radius.data());
-    }
     virtual void update() override {
         if (js.fetchState()) {
-            js.ImGuiShow();
+            if (p_control) {
+                ImGui::Begin("Joystick Info");
+                js.ImGuiShow();
+                ImGui::End();
+            }
             const glm::vec2 axes_l = glm::vec2(
                     js.getAxis(JoyStick::AXIS_LEFT_X),
                     -js.getAxis(JoyStick::AXIS_LEFT_Y))*ImGui::GetIO().DeltaTime;
@@ -61,6 +32,12 @@ private:
                     -js.getAxis(JoyStick::AXIS_RIGHT_Y))*ImGui::GetIO().DeltaTime;
             cam.walk(axes_l);
             cam.rotate(axes_r);
+        }
+        if (p_control) {
+            ImGui::Begin("Camera");
+            cam.ImGuiDrag();
+            cam.ImGuiEdit();
+            ImGui::End();
         }
         const float dist = 10.f;
         ImVec2 window_pos = ImVec2(ImGui::GetIO().DisplaySize.x - dist, dist);
@@ -74,33 +51,20 @@ private:
                 setFullScreen(fullscreen);
         }
         ImGui::End();
-        if (p_control) {
-            ImGui::Begin("control", &p_control);
-            if (ImGui::Button("load random data")) {
-                loadRandomData();
-            }
-            //TODO
-            /* ImGui::InputText("csv file", csvFile, sizeof(csvFile)); */
-            /* if (ImGui::Button("load file")) { */
-            /* } */
-            cam.ImGuiDrag();
-            cam.ImGuiEdit();
-            ImGui::End();
-        }
         glClearColor(0.8, 0.8, 0.8, 1.0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        loadUniform();
-        program.draw();
-        /* ImDrawList * drawList = ImGui::GetOverlayDrawList(); */
-        /* drawList->PushClipRectFullScreen(); */
-        /* const float s = 1.2 + 0.2*cos(ImGui::GetTime()*0.3*2*M_PI); */
-        /* drawList->AddCircleFilled(ImGui::GetMousePos(), 20 * sqrt(s), ImGui::ColorConvertFloat4ToU32(ImVec4(1.0,0.5,0.0,1*(1-exp(-1.5/s)))), 36); */
-        /* drawList->AddText(ImVec2(10,10), 0xffffffff, "nice!"); */
-        /* drawList->PopClipRect(); */
+
+        ImDrawList * drawList = ImGui::GetOverlayDrawList();
+        drawList->PushClipRectFullScreen();
+        const float s = 1.2 + 0.2*cos(ImGui::GetTime()*0.3*2*M_PI);
+        drawList->AddCircleFilled(ImGui::GetMousePos(), 20 * sqrt(s), ImGui::ColorConvertFloat4ToU32(ImVec4(1.0,0.5,0.0,1*(1-exp(-1.5/s)))), 36);
+        //drawList->AddRect(ImVec2(10,10), 0xffffffff, "nice!");
+        drawList->AddText(ImVec2(10,10), 0xffffffff, "nice!");
+        drawList->PopClipRect();
+        ImGui::Button("");
     }
 };
 
 int main(int argc, char ** argv) {
     return App(argc, argv).exec();
 }
-

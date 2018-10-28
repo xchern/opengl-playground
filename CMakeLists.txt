@@ -9,6 +9,13 @@ target_link_libraries(shadertoy
     imgui-app
     )
 
+add_executable(particles
+    particles-demo.cc
+    )
+target_link_libraries(particles
+    imgui-app
+    )
+
 add_executable(main
     main.cc
     )

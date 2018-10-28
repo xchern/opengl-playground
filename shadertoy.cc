@@ -1,5 +1,5 @@
 #include "ImGuiApp.h"
-#include "glshader_helper.h"
+#include "gl_helper.h"
 #include <string>
 
 static const char vert_src[] = R"(
@@ -43,6 +43,7 @@ private:
     GLuint vertex, fragment, program;
     GLuint vertBuf;
     GLuint vao;
+    bool autoload = false;
 public:
     ShaderToy() {
         program = glCreateProgram();
@@ -89,7 +90,8 @@ public:
     }
     void update() {
         ImGui::InputText("glsl file", file, sizeof(file));
-        if (ImGui::Button("load program"))
+        ImGui::Checkbox("autoload", &autoload);
+        if (autoload || (ImGui::SameLine(), ImGui::Button("load")))
             loadShaderToy(readFile(file).c_str());
     }
     void draw() {
