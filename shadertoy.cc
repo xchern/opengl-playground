@@ -44,6 +44,8 @@ private:
     GLuint vertBuf;
     GLuint vao;
     bool autoload = false;
+    std::string source;
+    std::string log;
 public:
     ShaderToy() {
         program = glCreateProgram();
@@ -64,7 +66,7 @@ public:
         glEnableVertexAttribArray(0);
 
         if (!compileShader(vertex, vert_src))
-            printf("shader log: %s\n", getShaderInfoLog(vertex).c_str());
+            printf("cannot load vertex shader: %s\n", getShaderInfoLog(vertex).c_str());
         loadShaderToy("void mainImage(out vec4 c, in vec2 f) {c=vec4(f/iResolution.xy,1,1);}");
     }
     ~ShaderToy() {
@@ -82,17 +84,27 @@ public:
     }
 
     void loadShaderToy(const char * shadertoy_src) {
-        const char * srcs[] = {frag_hd, shadertoy_src};
-        if (!compileShader(fragment, 2, srcs))
-            printf("shader log: %s\n", getShaderInfoLog(fragment).c_str());
-        bool isLinked = linkProgram(program, vertex, fragment);
-        if (!isLinked) printf("program log: %s\n", getProgramInfoLog(program).c_str());
+        if (source != shadertoy_src) {
+            source = shadertoy_src;
+            log.clear();
+            const char * srcs[] = {frag_hd, shadertoy_src};
+            if (!compileShader(fragment, 2, srcs)) {
+                log += getShaderInfoLog(fragment);
+                return;
+            }
+            if (!linkProgram(program, vertex, fragment)) {
+                log += getProgramInfoLog(program);
+                return;
+            }
+            log += "success!\n";
+        }
     }
     void update() {
         ImGui::InputText("glsl file", file, sizeof(file));
         ImGui::Checkbox("autoload", &autoload);
         if (autoload || (ImGui::SameLine(), ImGui::Button("load")))
             loadShaderToy(readFile(file).c_str());
+        ImGui::Text("%s", log.c_str());
     }
     void draw() {
         glUseProgram(program);
