@@ -22,8 +22,8 @@ public:
             out float fBallRadius;
             out vec3 fCol;
             void main() {
-                float sizeFactor = 1.0 / (1.0 + 5.0 * vRadius/gl_Position.w);
                 gl_Position = MVP * vec4(vPos, 1.0);
+                float sizeFactor = 1.0 / (1.0 + 5.0 * vRadius/gl_Position.w);
                 gl_PointSize = unitSize * vRadius * sizeFactor / gl_Position.w;
                 fDist = gl_Position.w;
                 fDepthA = -length(vec3(MVP[0][2], MVP[1][2], MVP[2][2]));
