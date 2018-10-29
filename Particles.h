@@ -44,6 +44,8 @@ public:
                 if (l2 > 1) discard;
                 float dist = fDist - fBallRadius * sqrt(1.0 - l2);
                 gl_FragDepth = -fDepthA + fDepthB / dist;
+                // normalize to [0, 1]
+                gl_FragDepth = (gl_FragDepth + 1) / 2;
                 gl_FragColor = vec4(fCol, 1.0);
             }
             )";
