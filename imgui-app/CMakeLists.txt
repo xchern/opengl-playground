@@ -6,6 +6,8 @@ find_package( OpenGL REQUIRED )
 find_package( glfw3 REQUIRED )
 
 add_library(imgui-app
+    VideoWriter.cc
+    VideoWriter.h
     ImGuiApp.cpp
     ImGuiApp.h
     imgui_impl_opengl3.cpp

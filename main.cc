@@ -8,8 +8,12 @@
 #include "Particles.h"
 
 class App : public ImGui::App {
+    VideoWriter vw;
 public:
-    App(int argc, char ** argv) : ImGui::App("ImGuiApp", 1280, 960) {
+    App(int argc, char ** argv) :
+        ImGui::App("ImGuiApp", 1280, 960),
+        vw("output.mp4", 60)
+    {
         ImGui::GetIO().Fonts->AddFontFromFileTTF("DejaVuSans.ttf", 24.0f);
     }
 private:
@@ -18,6 +22,12 @@ private:
     bool p_control = true;
     bool fullscreen = false;
     virtual void update() override {
+        {
+            auto & io = ImGui::GetIO();
+            int w = io.DisplaySize.x;
+            int h = io.DisplaySize.y;
+            vw.writeFrameGL(w, h);
+        }
         if (js.fetchState()) {
             if (p_control) {
                 ImGui::Begin("Joystick Info");

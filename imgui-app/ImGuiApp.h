@@ -26,6 +26,8 @@
                     __FILE__, __LINE__, err);                               \
     } while (0)
 
+#include "VideoWriter.h"
+
 namespace ImGui {
 class App {
 public:
