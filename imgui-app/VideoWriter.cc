@@ -7,7 +7,11 @@ VideoWriter::VideoWriter() : VideoWriter("output.mp4", 24) {}
 
 VideoWriter::VideoWriter(const char * filename, int framerate) : frame(0) {
     char cmd[256];
-    sprintf(cmd, "ffmpeg -y -framerate %d -format image2pipe -i - -vf format=yuv420p \'%s\'", framerate, filename);
+    sprintf(cmd,
+            "ffmpeg -loglevel error -y "
+            "-framerate %d -format image2pipe -i - "
+            "-vf format=yuv420p \'%s\'",
+            framerate, filename);
     fp = popen(cmd, "w");
 }
 
