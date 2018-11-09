@@ -15,6 +15,8 @@ public:
         BUTTON_START,
         BUTTON_BACK,
         BUTTON_GUIDE,
+        BUTTON_LEFT_AXIS,
+        BUTTON_RIGHT_AXIS,
     };
     bool getButton(enum Button code) {
         return buttons[code];
