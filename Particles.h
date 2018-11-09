@@ -7,7 +7,7 @@ private:
     size_t particleNumber = 0;
     BufferArray ba;
 public:
-    ParticleShaderProgram() : ba(3) {
+    ParticleShaderProgram() {
         static const char vertSrc[] = R"(
             #version 330
             uniform mat4 MVP;
@@ -51,7 +51,7 @@ public:
             )";
         program = ProgramLoader::fromSource(vertSrc, fragSrc);
         int dim[] = {3,3,1};
-        ba.setupVAO(dim);
+        ba.setup(3, dim);
         setUnitSize(1000);
         glCheckError();
     }

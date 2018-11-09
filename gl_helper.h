@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <ImGuiApp.h>
 
+// for reading shader source
 inline std::string readFile(const char * filename) {
     FILE * fp = fopen(filename, "r");
     if (!fp) return "";
@@ -51,9 +52,9 @@ inline bool linkProgram(GLuint program, GLuint vert_shdr, GLuint frag_shdr) {
 inline std::string getShaderInfoLog(GLuint shader) {
     GLint maxLength; // The maxLength includes the NULL character
     glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &maxLength);
-    std::string errorLog(maxLength, '\0');
-    glGetShaderInfoLog(shader, maxLength, &maxLength, &errorLog[0]);
-    return &errorLog[0];
+    std::string infoLog(maxLength, '\0');
+    glGetShaderInfoLog(shader, maxLength, &maxLength, &infoLog[0]);
+    return &infoLog[0];
 }
 
 inline std::string getProgramInfoLog(GLuint program) {
@@ -64,46 +65,71 @@ inline std::string getProgramInfoLog(GLuint program) {
     return infoLog.c_str();
 }
 
+class Shader {
+    GLuint shader;
+public:
+    Shader(GLenum type) { shader = glCreateShader(type); }
+    ~Shader() {glDeleteShader(shader);}
+    Shader(Shader && s) {*this=std::move(s);}
+    Shader & operator=(Shader && s) {
+        reset(s.release());
+        return *this;
+    }
+    GLuint get() {return shader;}
+    GLuint release() {
+        GLuint s = shader;
+        shader = 0;
+        return s;
+    }
+    void reset(GLuint s) {
+        glDeleteShader(shader);
+        shader = s;
+    }
+};
 
-class ProgramLoader {
-    GLuint vertex, fragment, program;
-    ProgramLoader() {
-        program = glCreateProgram();
-        vertex = glCreateShader(GL_VERTEX_SHADER);
-        fragment = glCreateShader(GL_FRAGMENT_SHADER);
-    }
-    ~ProgramLoader() {
-        glDeleteShader(vertex);
-        glDeleteShader(fragment);
+class Program {
+    GLuint program;
+public:
+    Program() { program = glCreateProgram(); }
+    ~Program() {glDeleteProgram(program);}
+    Program(Program && p) {*this=std::move(p);}
+    Program & operator=(Program && p) {
         glDeleteProgram(program);
+        program = p.program;
+        p.program = 0;
+        return *this;
     }
-    bool compile(const char * vert_src, const char * frag_src) {
-        if (!compileShader(vertex, vert_src)) {
-            printf("vertex shader log: %s\n", getShaderInfoLog(vertex).c_str());
-            return false;
-        }
-        if (!compileShader(fragment, frag_src)) {
-            printf("fragment shader log: %s\n", getShaderInfoLog(fragment).c_str());
-            return false;
-        }
-        if (!linkProgram(program, vertex, fragment)) {
-            printf("program log: %s\n", getProgramInfoLog(program).c_str());
-            return false;
-        }
-        return true;
-    }
-    GLuint giveProgram() {
+    GLuint get() {return program;}
+    GLuint release() {
         GLuint p = program;
         program = 0;
         return p;
     }
+    void reset(GLuint p) {
+        glDeleteProgram(program);
+        program = p;
+    }
+};
+
+class ProgramLoader {
 public:
     static GLuint fromSource(const char * vert_src, const char * frag_src) {
-        ProgramLoader pl;
-        if (pl.compile(vert_src, frag_src))
-            return pl.giveProgram();
-        else
+        Shader vertex(GL_VERTEX_SHADER);
+        if (!compileShader(vertex.get(), vert_src)) {
+            printf("vertex shader log: %s\n", getShaderInfoLog(vertex.get()).c_str());
             return 0;
+        }
+        Shader fragment(GL_FRAGMENT_SHADER);
+        if (!compileShader(fragment.get(), frag_src)) {
+            printf("fragment shader log: %s\n", getShaderInfoLog(fragment.get()).c_str());
+            return 0;
+        }
+        Program program;
+        if (!linkProgram(program.get(), vertex.get(), fragment.get())) {
+            printf("program log: %s\n", getProgramInfoLog(program.get()).c_str());
+            return 0;
+        }
+        return program.release();
     }
 };
 
@@ -112,22 +138,27 @@ public:
 class BufferArray {
 public:
     GLuint vao;
-    int buffersNumber;
+    int bufferNumber;
     GLuint buffers[16];
-    BufferArray(int bufferNum) : buffersNumber(bufferNum) {
-        assert(buffersNumber <= 16);
+    BufferArray() : bufferNumber(0) {
         glGenVertexArrays(1, &vao);
-        glGenBuffers(buffersNumber, buffers);
+    }
+    void allocBuffers(int bufferNum) {
+        glDeleteBuffers(bufferNumber, buffers);
+        bufferNumber = bufferNum;
+        assert(bufferNumber <= 16);
+        glGenBuffers(bufferNumber, buffers);
     }
     ~BufferArray() {
         glDeleteVertexArrays(1, &vao);
-        glDeleteBuffers(buffersNumber, buffers);
+        glDeleteBuffers(bufferNumber, buffers);
     }
-    void setupVAO(const int dim[]) {
+    void setup(int bufferNum, const int bufferDim[]) {
+        allocBuffers(bufferNum);
         glBindVertexArray(vao);
-        for (int i = 0; i < buffersNumber; i++) {
+        for (int i = 0; i < bufferNumber; i++) {
             glBindBuffer(GL_ARRAY_BUFFER, buffers[i]);
-            glVertexAttribPointer(i, dim[i], GL_FLOAT, GL_FALSE, dim[i] * sizeof(float), (void *)0);
+            glVertexAttribPointer(i, bufferDim[i], GL_FLOAT, GL_FALSE, bufferDim[i] * sizeof(float), (void *)0);
             glEnableVertexAttribArray(i);
         }
     }

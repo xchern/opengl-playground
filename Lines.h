@@ -9,7 +9,7 @@ private:
     size_t vertexNumber = 0;
     BufferArray ba;
 public:
-    LinesShaderProgram() : ba(2) {
+    LinesShaderProgram() {
         static const char vertSrc[] = R"(
             #version 330
             uniform mat4 MVP;
@@ -30,7 +30,7 @@ public:
             )";
         program = ProgramLoader::fromSource(vertSrc, fragSrc);
         int dim[] = {3,3};
-        ba.setupVAO(dim);
+        ba.setup(2, dim);
         glCheckError();
     }
     ~LinesShaderProgram() {
