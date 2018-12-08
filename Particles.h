@@ -5,7 +5,7 @@ class ParticleShaderProgram {
 private:
     GLuint program;
     size_t particleNumber = 0;
-    BufferArray ba;
+    BufferArray<3> ba;
 public:
     ParticleShaderProgram() {
         static const char vertSrc[] = R"(
@@ -49,19 +49,18 @@ public:
                 gl_FragColor = vec4(fCol, 1.0);
             }
             )";
-        program = ProgramLoader::fromSource(vertSrc, fragSrc);
-        int dim[] = {3,3,1};
-        ba.setup(3, dim);
+        program = programFromSource(vertSrc, fragSrc);
+        ba.setupVAO({3,3,1});
         setUnitSize(1000);
         glCheckError();
     }
     ~ParticleShaderProgram() {
         glDeleteProgram(program);
     }
-    void setData(size_t N, const float * pos, const float * col, const float * radius) {
-        ba.setData(0, N * 3 * sizeof(float), pos);
-        ba.setData(1, N * 3 * sizeof(float), col);
-        ba.setData(2, N * sizeof(float), radius);
+    void bufferData(size_t N, const float * pos, const float * col, const float * radius) {
+        ba.bufferData(0, N * 3 * sizeof(float), pos);
+        ba.bufferData(1, N * 3 * sizeof(float), col);
+        ba.bufferData(2, N * sizeof(float), radius);
         particleNumber = N;
         glCheckError();
     }

@@ -3,7 +3,6 @@
 #include "gl_helper.h"
 #include "joystick.h"
 #include "Particles.h"
-#include "Lines.h"
 
 #include <math.h>
 #include <vector>
@@ -18,16 +17,9 @@ public:
         //glfwSwapInterval(0);
         loadUniform();
         loadParticles();
-        loadLines();
-    }
-    void loadLines() {
-        LinesBuffer lb;
-        lb.addAABB({-1,-1,-1}, {1,1,1}, {4,4,4});
-        lsp.setData(lb.vertexNumber(), lb.posPtr(), lb.colPtr());
     }
 private:
     ParticleShaderProgram psp;
-    LinesShaderProgram lsp;
     Camera cam;
     JoyStick js;
     bool p_control = true;
@@ -35,7 +27,6 @@ private:
     void loadUniform() {
         auto displaySize = ImGui::GetIO().DisplaySize;
         auto mat = cam.getMat(displaySize.x/displaySize.y);
-        lsp.setMVP(false, (const float *)&mat);
         psp.setMVP(false, (const float *)&mat);
         psp.setUnitSize(displaySize.y * cam.getDist() / cam.target_size);
     }
@@ -56,7 +47,7 @@ private:
             col.push_back(c.b);
             radius.push_back(0.1 + 0.2 * sqrt(randFloat()));
         }
-        psp.setData(N, pos.data(), col.data(), radius.data());
+        psp.bufferData(N, pos.data(), col.data(), radius.data());
     }
     virtual void update() override {
         // joystick
@@ -99,7 +90,6 @@ private:
         loadUniform();
         psp.draw();
         glLineWidth(8);
-        lsp.draw();
     }
 };
 

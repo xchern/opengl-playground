@@ -1,8 +1,11 @@
 #pragma once
 
 #include<GLFW/glfw3.h>
+#ifdef USE_IMGUI
 #include<imgui.h>
+#endif
 
+// Xbox 360 joystick handling
 class JoyStick {
 public:
     enum Button {
@@ -33,6 +36,7 @@ public:
     };
     float getAxis(enum Axis code) {
         const float a = axes[code];
+        // discard non-zero rest value
         return a > 0.05f || a < -0.05f ? a : 0;
     }
     bool fetchState() {
@@ -43,6 +47,7 @@ public:
         } else
             return false;
     }
+#ifdef USE_IMGUI
     void ImGuiShow() {
         ImGui::Text("%s", glfwGetJoystickName(GLFW_JOYSTICK_1));
         for (int i = 0; i < axes_count; i++) {
@@ -54,6 +59,7 @@ public:
             ImGui::Text("%d", buttons[i]);
         }
     }
+#endif
 private:
     int buttons_count;
     const unsigned char *buttons;

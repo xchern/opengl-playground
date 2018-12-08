@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 #include <stdio.h>
 #include <assert.h>
 #include <ImGuiApp.h>
@@ -10,12 +11,12 @@ inline std::string readFile(const char * filename) {
     FILE * fp = fopen(filename, "r");
     if (!fp) return "";
     // obtain file size:
-    fseek (fp , 0 , SEEK_END);
+    fseek(fp , 0 , SEEK_END);
     size_t size = ftell(fp);
-    rewind (fp);
+    rewind(fp);
     // readfile
     std::string content(size + 1, '\0');
-    size_t result = fread (&content[0], 1, size, fp);
+    size_t result = fread(&content[0], 1, size, fp);
     if (result != size) {
         fputs("error reading file", stderr);
         return "";
@@ -65,6 +66,9 @@ inline std::string getProgramInfoLog(GLuint program) {
     return infoLog.c_str();
 }
 
+
+// boxed shader and program, follow the interface of std::unique_ptr
+
 class Shader {
     GLuint shader;
 public:
@@ -75,6 +79,8 @@ public:
         reset(s.release());
         return *this;
     }
+    Shader(const Shader &) = delete;
+    Shader & operator=(const Shader & s) = delete;
     GLuint get() {return shader;}
     GLuint release() {
         GLuint s = shader;
@@ -99,6 +105,8 @@ public:
         p.program = 0;
         return *this;
     }
+    Program(const Program &) = delete;
+    Program & operator=(const Program & s) = delete;
     GLuint get() {return program;}
     GLuint release() {
         GLuint p = program;
@@ -111,59 +119,83 @@ public:
     }
 };
 
-class ProgramLoader {
-public:
-    static GLuint fromSource(const char * vert_src, const char * frag_src) {
-        Shader vertex(GL_VERTEX_SHADER);
-        if (!compileShader(vertex.get(), vert_src)) {
-            printf("vertex shader log: %s\n", getShaderInfoLog(vertex.get()).c_str());
-            return 0;
-        }
-        Shader fragment(GL_FRAGMENT_SHADER);
-        if (!compileShader(fragment.get(), frag_src)) {
-            printf("fragment shader log: %s\n", getShaderInfoLog(fragment.get()).c_str());
-            return 0;
-        }
-        Program program;
-        if (!linkProgram(program.get(), vertex.get(), fragment.get())) {
-            printf("program log: %s\n", getProgramInfoLog(program.get()).c_str());
-            return 0;
-        }
-        return program.release();
+inline GLuint programFromSource(const char * vert_src, const char * frag_src) {
+    Shader vertex(GL_VERTEX_SHADER);
+    if (!compileShader(vertex.get(), vert_src)) {
+        printf("vertex shader log: %s\n", getShaderInfoLog(vertex.get()).c_str());
+        return 0;
     }
-};
+    Shader fragment(GL_FRAGMENT_SHADER);
+    if (!compileShader(fragment.get(), frag_src)) {
+        printf("fragment shader log: %s\n", getShaderInfoLog(fragment.get()).c_str());
+        return 0;
+    }
+    Program program;
+    if (!linkProgram(program.get(), vertex.get(), fragment.get())) {
+        printf("program log: %s\n", getProgramInfoLog(program.get()).c_str());
+        return 0;
+    }
+    return program.release();
+}
 
 // ========== buffers ==========
+// some vbos and a vao together
+// setupVAO for array-of-struct memory layout
 
+template <int NBuf>
 class BufferArray {
 public:
     GLuint vao;
-    int bufferNumber;
-    GLuint buffers[16];
-    BufferArray() : bufferNumber(0) {
+    GLuint buffers[NBuf];
+    BufferArray() {
         glGenVertexArrays(1, &vao);
-    }
-    void allocBuffers(int bufferNum) {
-        glDeleteBuffers(bufferNumber, buffers);
-        bufferNumber = bufferNum;
-        assert(bufferNumber <= 16);
-        glGenBuffers(bufferNumber, buffers);
+        static_assert(NBuf <= 16);
+        glGenBuffers(NBuf, buffers);
     }
     ~BufferArray() {
         glDeleteVertexArrays(1, &vao);
-        glDeleteBuffers(bufferNumber, buffers);
+        glDeleteBuffers(NBuf, buffers);
     }
-    void setup(int bufferNum, const int bufferDim[]) {
-        allocBuffers(bufferNum);
+    BufferArray(BufferArray && ba) { *this = ba; }
+    BufferArray & operator=(BufferArray && ba) {
+        memcpy(this, &ba, sizeof(BufferArray));
+        memset(&ba, 0, sizeof(BufferArray));
+    }
+    BufferArray(const BufferArray &) = delete;
+    BufferArray & operator=(const BufferArray &) = delete;
+    void setupVAO(std::vector<int> dim) {
+        assert(dim.size() == NBuf);
+        setupVAO(dim.data());
+    }
+    void setupVAO(const int bufferDim[]) {
         glBindVertexArray(vao);
-        for (int i = 0; i < bufferNumber; i++) {
+        for (int i = 0; i < NBuf; i++) {
             glBindBuffer(GL_ARRAY_BUFFER, buffers[i]);
             glVertexAttribPointer(i, bufferDim[i], GL_FLOAT, GL_FALSE, bufferDim[i] * sizeof(float), (void *)0);
             glEnableVertexAttribArray(i);
         }
     }
-    void setData(int i, const size_t size, const float * ptr, GLenum usage = GL_DYNAMIC_DRAW) {
+    void bufferData(int i, const size_t size, const float * ptr, GLenum usage = GL_DYNAMIC_DRAW) {
+        assert(i < NBuf);
         glBindBuffer(GL_ARRAY_BUFFER, buffers[i]);
         glBufferData(GL_ARRAY_BUFFER, size, ptr, usage);
     }
+};
+
+//   TODO: get metadata
+// ========== shader program with metadata ==========
+//   uniform: name, type, location
+//   attribute: name, type, location
+//     where type : float vec234, mat234,
+
+class ProgramLoader {
+public:
+    enum type {TYPE_NONE = 0,
+        TYPE_FLOAT,
+        TYPE_VEC2, TYPE_VEC3, TYPE_VEC4,
+        TYPE_MAT2, TYPE_MAT3, TYPE_MAT4,
+    };
+private:
+    std::vector<std::tuple<std::string, enum type, GLint>> uniforms;
+    std::vector<std::tuple<std::string, enum type, GLint>> attributes;
 };
