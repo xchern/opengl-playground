@@ -21,7 +21,6 @@ target_link_libraries(imgui-app
     imgui
     glfw
     ${OPENGL_gl_LIBRARY}
-    dl
     )
 
 add_executable(imgui-demo

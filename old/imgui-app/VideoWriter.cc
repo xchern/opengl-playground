@@ -12,11 +12,11 @@ VideoWriter::VideoWriter(const char * filename, int framerate) : frame(0) {
             "-framerate %d -format image2pipe -i - "
             "-vf format=yuv420p \'%s\'",
             framerate, filename);
-    fp = popen(cmd, "w");
+    fp = _popen(cmd, "w");
 }
 
 VideoWriter::~VideoWriter() {
-    pclose(fp);
+    _pclose(fp);
 }
 
 inline

@@ -149,7 +149,7 @@ public:
     GLuint buffers[NBuf];
     BufferArray() {
         glGenVertexArrays(1, &vao);
-        static_assert(NBuf <= 16);
+        //static_assert(NBuf <= 16);
         glGenBuffers(NBuf, buffers);
     }
     ~BufferArray() {
