@@ -51,17 +51,16 @@ class Shadertoy():
 
     def draw(self, res, time=0, mouse=(0,0,0,0)):
         glUseProgram(self.program)
-        glUniform3f(glGetUniformLocation(self.program, "iResolution"), *res)
+        glUniform3fv(glGetUniformLocation(self.program, "iResolution"), 1, res)
         glUniform1f(glGetUniformLocation(self.program, "iTime"), time)
-        glUniform4f(glGetUniformLocation(self.program, "iMouse"), *mouse)
+        glUniform4fv(glGetUniformLocation(self.program, "iMouse"), 1, mouse)
         glRecti(-1,-1,1,1)
-
 
 if __name__ == '__main__':
     import argparse
     import sys
     import atexit
-    from glapp import *
+    from glapp import App
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-res', default='960x720', type=str)
@@ -88,19 +87,15 @@ void mainImage(out vec4 c, in vec2 f) {
     st.compile(shadertoy_src)
 
     if args.offline:
-        # TODO generate video
-        fps = args.fps if args.fps else 24
-        cmd = ("ffmpeg -framerate {fps} -f image2pipe "
-        "-i - -vf format=yuv420p -y output.mp4").format(fps=fps)
-        from PIL import Image
-        import subprocess
-        with subprocess.Popen(cmd,
-            stdin=subprocess.PIPE) as fp:
-            for frame in range(10 * fps):
-                st.draw((res[0], res[1], 1), frame/fps)
-                im = glReadPixels(0,0,res[0],res[1],GL_RGB,GL_UNSIGNED_BYTE)
-                im = Image.frombytes("RGB", res, im).transpose(Image.FLIP_TOP_BOTTOM)
-                im.save(fp.stdin, "PNG")
+        fps = args.fps
+        from glapp import FFMpegVideoWriter
+        iw = FFMpegVideoWriter("output.mp4", fps)
+        for frame in range(10 * fps):
+            st.draw((res[0], res[1], 1), frame/fps)
+            glFinish()
+            iw.writeframe(0,0,res[0],res[1])
+        del iw
+                
     else:
         time0 = 0
         def display():
@@ -121,5 +116,3 @@ void mainImage(out vec4 c, in vec2 f) {
         App.display_cb = display
         App.keyboard_cb = keyboard
         App.run()
-
-    del st

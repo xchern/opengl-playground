@@ -76,3 +76,37 @@ class App():
     def keyboard(k, x, y):
         App.mouse_pos[0], App.mouse_pos[1] = x, y
         App.keyboard_cb(k)
+
+class FFMpegVideoWriter():
+    def __init__(self, file, fps):
+        if file[-4:] != '.mp4':
+            file += '.mp4'
+        import subprocess
+        cmd = ("ffmpeg -framerate {fps} -f image2pipe "
+        "-i - -vf format=yuv420p -y {file}").format(fps=fps, file=file)
+        self.pipe = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+        
+    def writeframe(self, x, y, width, height):
+        from PIL import Image
+        im = glReadPixels(x, y, width, height, GL_RGB,GL_UNSIGNED_BYTE)
+        im = Image.frombytes("RGB", (width, height), im).transpose(Image.FLIP_TOP_BOTTOM)
+        im.save(self.pipe.stdin, "PNG")
+
+if __name__ == '__main__':
+    App.init()
+    iw = FFMpegVideoWriter("output.mp4", 60)
+    def display():
+        glLoadIdentity()
+        glRotate(App.time*120/1000,0,0,1)
+        glBegin(GL_TRIANGLES)
+        glColor3f(1,0,0)
+        glVertex2f(1,0)
+        glColor3f(0,1,0)
+        glVertex2f(-0.5,-0.8)
+        glColor3f(0,0,1)
+        glVertex2f(-0.5,0.8)
+        glEnd()
+        glFinish()
+        iw.writeframe(0,0,App.res[0],App.res[1])
+    App.display_cb = display
+    App.run()
