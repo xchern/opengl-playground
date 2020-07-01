@@ -84,6 +84,7 @@ class FFMpegVideoWriter():
         import subprocess
         cmd = ("ffmpeg -framerate {fps} -f image2pipe "
         "-i - -vf format=yuv420p -y {file}").format(fps=fps, file=file)
+        cmd = cmd.split(" ")
         self.pipe = subprocess.Popen(cmd, stdin=subprocess.PIPE)
         
     def writeframe(self, x, y, width, height):

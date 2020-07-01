@@ -65,8 +65,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-res', default='960x720', type=str)
     parser.add_argument('-input')
-    parser.add_argument('-fps', default=24, type=int)
     parser.add_argument('-offline', action='store_true')
+    parser.add_argument('-fps', default=24, type=float)
+    parser.add_argument('-time', default=10, type=float)
     args = parser.parse_args()
 
     if args.input:
@@ -90,7 +91,7 @@ void mainImage(out vec4 c, in vec2 f) {
         fps = args.fps
         from glapp import FFMpegVideoWriter
         iw = FFMpegVideoWriter("output.mp4", fps)
-        for frame in range(10 * fps):
+        for frame in range(int(args.time * fps)):
             st.draw((res[0], res[1], 1), frame/fps)
             glFinish()
             iw.writeframe(0,0,res[0],res[1])
