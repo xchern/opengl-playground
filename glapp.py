@@ -90,7 +90,7 @@ class FFMpegVideoWriter():
         from PIL import Image
         im = glReadPixels(x, y, width, height, GL_RGB,GL_UNSIGNED_BYTE)
         im = Image.frombytes("RGB", (width, height), im).transpose(Image.FLIP_TOP_BOTTOM)
-        im.save(self.pipe.stdin, "PNG")
+        im.save(self.pipe.stdin, "PPM")
 
 if __name__ == '__main__':
     App.init()
