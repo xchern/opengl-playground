@@ -1,5 +1,6 @@
 from OpenGL.GL import *
 from OpenGL.GLUT import *
+from PIL import Image
 
 class App():
     _window = None
@@ -87,16 +88,16 @@ class FFMpegVideoWriter():
         cmd = cmd.split(" ")
         self.pipe = subprocess.Popen(cmd, stdin=subprocess.PIPE)
         
-    def writeframe(self, x, y, width, height):
-        from PIL import Image
-        im = glReadPixels(x, y, width, height, GL_RGB,GL_UNSIGNED_BYTE)
-        im = Image.frombytes("RGB", (width, height), im).transpose(Image.FLIP_TOP_BOTTOM)
+    def writeframe(self, im):
+        assert(isinstance(im, Image.Image))
         im.save(self.pipe.stdin, "PPM")
 
 if __name__ == '__main__':
+    import gc
     App.init()
     iw = FFMpegVideoWriter("output.mp4", 60)
     def display():
+        gc.collect()
         glLoadIdentity()
         glRotate(App.time*120/1000,0,0,1)
         glBegin(GL_TRIANGLES)
@@ -108,6 +109,8 @@ if __name__ == '__main__':
         glVertex2f(-0.5,0.8)
         glEnd()
         glFinish()
-        iw.writeframe(0,0,App.res[0],App.res[1])
+        im = glReadPixels(0,0,App.res[0],App.res[1], GL_RGB,GL_UNSIGNED_BYTE)
+        im = Image.frombytes("RGB", App.res, im).transpose(Image.FLIP_TOP_BOTTOM)
+        iw.writeframe(im)
     App.display_cb = display
     App.run()

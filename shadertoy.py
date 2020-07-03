@@ -1,3 +1,5 @@
+import re
+from PIL import Image
 from OpenGL.GL import *
 
 shadertoy_header = '''
@@ -30,15 +32,76 @@ void main( void ) {
 }
 '''
 
+def loadTexture(tex, type_, fname):
+    if type_ == 'Cube':
+        glBindTexture(GL_TEXTURE_CUBE_MAP, tex)
+        name, ext = fname.split('.')
+        for i in range(6):
+            if i != 0:
+                fname = name + '_{}.'.format(i) + ext
+            im = Image.open(fname)
+            if im.mode == "RGB":
+                format = GL_RGB
+            elif im.mode == "RGBA":
+                format = GL_RGBA
+            else:
+                raise RuntimeError("unknown format")
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format,
+                im.size[0], im.size[1], 0, format, GL_UNSIGNED_BYTE, im.tobytes())
+            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE)
+            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
+    elif type_ == '2D':
+        glBindTexture(GL_TEXTURE_2D, tex)
+        im = Image.open(fname)
+        if im.mode == "RGB":
+            format = GL_RGB
+        elif im.mode == "RGBA":
+            format = GL_RGBA
+        else:
+            raise RuntimeError("unknown format")
+        glTexImage2D(GL_TEXTURE_2D, 0, format, im.size[0], im.size[1],
+            0, format, GL_UNSIGNED_BYTE, im.tobytes())
+        glGenerateMipmap(GL_TEXTURE_2D)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+    else:
+        raise RuntimeError("unknown texture type")
+
 class Shadertoy():
-    def __init__(self):
+    texture_pat = re.compile(r'//\s*\[shadertoy\]\s*sampler(Cube|2D)\s+"(.*)"\s*\n')
+    def __init__(self, src):
+        # preprocess
+        tl = []
+        def f(m):
+            r = "uniform sampler{} iChannel{}; // {}\n".format(m.group(1), len(tl), m.group(2))
+            tl.append(m.groups())
+            return r
+        src = re.sub(Shadertoy.texture_pat, f, src)
+        # compile
         self.program = glCreateProgram()
         self.frag = glCreateShader(GL_FRAGMENT_SHADER)
-
+        self.compile(src)
+        glUseProgram(self.program)
+        # load texture
+        self.texture = glGenTextures(len(tl))
+        for i, info in enumerate(tl):
+            type_, fname = info
+            glActiveTexture(GL_TEXTURE0 + i)
+            loadTexture(self.texture[i], type_, fname)
+            glUniform1i(glGetUniformLocation(self.program, "iChannel{}".format(i)), i);
     def __del__(self):
         glDeleteProgram(self.program)
         glDeleteShader(self.frag)
-
+        glDeleteTextures(self.texture)
+    def draw(self, res, time=0, mouse=(0,0,0,0)):
+        glUniform3fv(glGetUniformLocation(self.program, "iResolution"), 1, res)
+        glUniform1f(glGetUniformLocation(self.program, "iTime"), time)
+        glUniform4fv(glGetUniformLocation(self.program, "iMouse"), 1, mouse)
+        glRecti(-1,-1,1,1)
     def compile(self, src):
         frag_src = shadertoy_header + src
         glShaderSource(self.frag, frag_src)
@@ -49,17 +112,8 @@ class Shadertoy():
         glLinkProgram(self.program)
         glDetachShader(self.program, self.frag)
 
-    def draw(self, res, time=0, mouse=(0,0,0,0)):
-        glUseProgram(self.program)
-        glUniform3fv(glGetUniformLocation(self.program, "iResolution"), 1, res)
-        glUniform1f(glGetUniformLocation(self.program, "iTime"), time)
-        glUniform4fv(glGetUniformLocation(self.program, "iMouse"), 1, mouse)
-        glRecti(-1,-1,1,1)
-
 if __name__ == '__main__':
     import argparse
-    import sys
-    import atexit
     from glapp import App
 
     parser = argparse.ArgumentParser()
@@ -84,8 +138,7 @@ void mainImage(out vec4 c, in vec2 f) {
     res = tuple(map(int, args.res.split('x')))
     App.init(res)
 
-    st = Shadertoy()
-    st.compile(shadertoy_src)
+    st = Shadertoy(shadertoy_src)
 
     if args.offline:
         fps = args.fps
@@ -94,9 +147,10 @@ void mainImage(out vec4 c, in vec2 f) {
         for frame in range(int(args.time * fps)):
             st.draw((res[0], res[1], 1), frame/fps)
             glFinish()
-            iw.writeframe(0,0,res[0],res[1])
+            im = glReadPixels(0,0,res[0],res[1], GL_RGB,GL_UNSIGNED_BYTE)
+            im = Image.frombytes("RGB", res, im).transpose(Image.FLIP_TOP_BOTTOM)
+            iw.writeframe(im)
         del iw
-                
     else:
         time0 = 0
         def display():
@@ -117,3 +171,4 @@ void mainImage(out vec4 c, in vec2 f) {
         App.display_cb = display
         App.keyboard_cb = keyboard
         App.run()
+    del st
